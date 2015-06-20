@@ -21,11 +21,7 @@ import java.text.ParseException;
 import java.util.*;
 
 import javax.jcr.*;
-import javax.jcr.lock.LockException;
-import javax.jcr.nodetype.ConstraintViolationException;
-import javax.jcr.nodetype.NoSuchNodeTypeException;
 import javax.jcr.nodetype.NodeType;
-import javax.jcr.version.VersionException;
 
 import junitx.util.PrivateAccessor;
 import org.apache.jackrabbit.api.security.user.Authorizable;
@@ -540,6 +536,382 @@ public class DefaultContentCreatorTest {
         contentCreator.finishNode();
         //False since it doesn't have referenceable mixin
         assertFalse(parentNode.hasProperty(propName));
+    }
+
+    //------DefaultContentCreator#createFileAndResourceNode(String, InputStream, String, long)------//
+
+    @Test
+    public void createNewFileAndResourceNode() throws RepositoryException, NoSuchFieldException {
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+
+        final String name = uniqueId();
+        final Long lastModified = 234248432L;
+        contentCreator.createFileAndResourceNode(name, new ByteArrayInputStream(new byte[0]), null, lastModified);
+
+        assertNotNull(parentNode.getNode(name));
+
+        Node contentNode = parentNode.getNode(name).getNode("jcr:content");
+        assertNotNull(contentNode);
+
+        final String DEFAULT_CONTENT_TYPE = "application/octet-stream";
+        assertEquals(DEFAULT_CONTENT_TYPE, contentNode.getProperty("jcr:mimeType").getString());
+        assertEquals(lastModified, contentNode.getProperty("jcr:lastModified").getLong(), 0);
+        assertNotNull(contentNode.getProperty("jcr:data"));
+    }
+
+    @Test
+    public void overwriteExistingFileAndResourceNode() throws RepositoryException, NoSuchFieldException {
+        final String name = uniqueId();
+        final Long lastModified = 1L;
+
+        contentCreator.init(U.createImportOptions(true, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+
+        Node contentNode = parentNode.addNode(name, "nt:file").addNode("jcr:content", "nt:resource");
+        //Below will check that these values will be overwritten
+        contentNode.setProperty("jcr:lastModified", lastModified);
+        contentNode.setProperty("jcr:mimeType", "foo");
+
+        assertFalse(contentNode.hasProperty("jcr:data"));
+        contentCreator.createFileAndResourceNode("prefixWithSlash/" + name, new ByteArrayInputStream(new byte[0]), null, 0L);
+        assertTrue(contentNode.hasProperty("jcr:data"));
+
+        final String DEFAULT_CONTENT_TYPE = "application/octet-stream";
+        assertEquals(DEFAULT_CONTENT_TYPE, contentNode.getProperty("jcr:mimeType").getString());
+        //Checking that passed in method 0-value was not set.
+        assertTrue(contentNode.getProperty("jcr:lastModified").getLong() > 0);
+        //Checking that property was overwritten after it was set above
+        assertNotEquals(lastModified, contentNode.getProperty("jcr:lastModified").getLong(), 0);
+    }
+
+    @Test
+    public void willNotOverwriteExistingFileAndResourceNode() throws RepositoryException, NoSuchFieldException {
+        final String mimeType = "foo";
+        final String name = uniqueId();
+        final Long lastModified = 32493421L;
+
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+
+        Node contentNode = parentNode.addNode(name, "nt:file").addNode("jcr:content", "nt:resource");
+        //Below will check that these values will be overwritten
+        contentNode.setProperty("jcr:lastModified", lastModified);
+        contentNode.setProperty("jcr:mimeType", mimeType);
+
+        assertFalse(contentNode.hasProperty("jcr:data"));
+        contentCreator.createFileAndResourceNode(name, new ByteArrayInputStream(new byte[0]), null, lastModified - 1);
+        assertFalse(contentNode.hasProperty("jcr:data"));
+
+        //Checking that properties were not overwritten after it was set above
+        assertEquals(lastModified, contentNode.getProperty("jcr:lastModified").getLong(), 0);
+        assertEquals(mimeType, contentNode.getProperty("jcr:mimeType").getString());
+
+        //Required property to save session
+        contentNode.setProperty("jcr:data", new BinaryValue(new ByteArrayInputStream(new byte[0])));
+    }
+
+    //------DefaultContentCreator#createGroup(String, String[], Map<String, Object>)------//
+
+    @Test
+    public void createGroupWithMembersAndExtraOptions() throws RepositoryException {
+        final String groupName = uniqueId();
+        final UserManager userManager = AccessControlUtil.getUserManager(session);
+
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+
+        final String[] groupMembers = {uniqueId(), uniqueId(), uniqueId()};
+        for(String groupMember: groupMembers){
+            userManager.createUser(groupMember, groupMember);
+        }
+
+        final Map<String, Object> extraProperties = new HashMap<String, Object>();
+        for(int i = 0; i < 3; i++){
+            extraProperties.put(uniqueId(), uniqueId());
+        }
+
+        assertNull(userManager.getAuthorizable(groupName));
+        contentCreator.createGroup(groupName, groupMembers, extraProperties);
+        Group group = (Group) userManager.getAuthorizable(groupName);
+        assertNotNull(group);
+
+        List<String> groupMembersList = Arrays.asList(groupMembers);
+        Iterator<Authorizable> members = group.getMembers();
+        while(members.hasNext()){
+            assertTrue(groupMembersList.contains(members.next().getID()));
+        }
+
+        for(String propertyName: extraProperties.keySet()) {
+            assertTrue(group.hasProperty(propertyName));
+        }
+    }
+
+    @Test
+    public void fillGroupWithExtraOptions() throws RepositoryException {
+        final String groupName = uniqueId();
+        final UserManager userManager = AccessControlUtil.getUserManager(session);
+
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+
+        final Map<String, Object> extraProperties = new HashMap<String, Object>();
+        for(int i = 0; i < 3; i++){
+            extraProperties.put(uniqueId(), uniqueId());
+        }
+
+        Group createdGroup = userManager.createGroup(groupName);
+        assertNotNull(createdGroup);
+        for(String optionName: extraProperties.keySet()){
+            assertFalse(createdGroup.hasProperty(optionName));
+        }
+
+        contentCreator.createGroup(groupName, null, extraProperties);
+
+        createdGroup = (Group) userManager.getAuthorizable(groupName);
+        assertNotNull(createdGroup);
+        for(String propertyName: extraProperties.keySet()) {
+            assertTrue(createdGroup.hasProperty(propertyName));
+        }
+    }
+
+    @Test
+    public void createGroupWithExistingName() throws RepositoryException {
+        final String groupName = uniqueId();
+
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+
+        final UserManager userManager = AccessControlUtil.getUserManager(session);
+        //Create a user with name of new group
+        userManager.createUser(groupName, groupName);
+
+        thrown.expect(RepositoryException.class);
+        thrown.expectMessage("A user already exists with the requested name: " + groupName);
+        contentCreator.createGroup(groupName, null, null);
+    }
+
+    //------DefaultContentCreator#createProperty(String, String[])------//
+
+    @Test
+    public void willNotOverwritePropertyValues() throws RepositoryException {
+        final String propertyName = uniqueId();
+        final String propertyValue = uniqueId();
+
+        parentNode.setProperty(propertyName, propertyValue);
+        session.save();
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+
+        contentCreator.createProperty(propertyName, new String[]{uniqueId(), uniqueId()});
+        //Checking that property was not overwritten
+        assertEquals(propertyValue, parentNode.getProperty(propertyName).getString());
+    }
+
+    @Test
+    public void deleteProperty() throws RepositoryException {
+        final String propertyName = uniqueId();
+        final ContentImportListener listener = mockery.mock(ContentImportListener.class);
+
+
+        this.mockery.checking(new Expectations(){{
+            oneOf(listener).onDelete(with(any(String.class)));
+        }});
+
+        parentNode.setProperty(propertyName, propertyName);
+        contentCreator.init(U.createImportOptions(false, false, true, false, false),
+                new HashMap<String, ContentReader>(), null, listener);
+        contentCreator.prepareParsing(parentNode, null);
+
+        assertTrue(parentNode.hasProperty(propertyName));
+        contentCreator.createProperty(propertyName, null);
+        assertFalse(parentNode.hasProperty(propertyName));
+
+        mockery.assertIsSatisfied();
+    }
+
+    @Test
+    public void createProperty() throws RepositoryException {
+        final String propertyName = uniqueId();
+        final String[] propertyValues = {uniqueId(), uniqueId(), uniqueId()};
+        final ContentImportListener listener = mockery.mock(ContentImportListener.class);
+
+        this.mockery.checking(new Expectations(){{
+            oneOf(listener).onModify(with(any(String.class)));
+        }});
+
+        contentCreator.init(U.createImportOptions(false, false, true, false, false),
+                new HashMap<String, ContentReader>(), null, listener);
+        contentCreator.prepareParsing(parentNode, null);
+
+        contentCreator.createProperty(propertyName, propertyValues);
+        assertTrue(parentNode.hasProperty(propertyName));
+
+        Value[] v = parentNode.getProperty(propertyName).getValues();
+        Map<String, Value> values = new HashMap<String, Value>();
+        for (Value val : v) {
+            values.put(val.getString(), val);
+        }
+
+        for(String value: propertyValues){
+            assertTrue(values.containsKey(value));
+        }
+
+        mockery.assertIsSatisfied();
+    }
+
+    //------DefaultContentCreator#createUser(String, String, Map<String, Object>)------//
+
+    @Test
+    public void createNewUser() throws RepositoryException {
+        final String userName = uniqueId();
+        final UserManager userManager = AccessControlUtil.getUserManager(session);
+
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+
+        assertNull(userManager.getAuthorizable(userName));
+        contentCreator.createUser(userName, userName, null);
+        assertNotNull(userManager.getAuthorizable(userName));
+    }
+
+    @Test
+    public void fillExistingUserExtraOptions() throws RepositoryException {
+        final String userName = uniqueId();
+        final UserManager userManager = AccessControlUtil.getUserManager(session);
+
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+        User createdUser = userManager.createUser(userName, userName);
+
+        final Map<String, Object> extraProperties = new HashMap<String, Object>();
+        for(int i = 0; i < 3; i++){
+            extraProperties.put(uniqueId(), uniqueId());
+        }
+
+        for(String prop: extraProperties.keySet()){
+            assertFalse(createdUser.hasProperty(prop));
+        }
+
+        contentCreator.createUser(userName, userName, extraProperties);
+        createdUser = (User) userManager.getAuthorizable(userName);
+        assertNotNull(createdUser);
+        for(String prop: extraProperties.keySet()){
+            assertTrue(createdUser.hasProperty(prop));
+        }
+    }
+
+    @Test
+    public void createNewUserWithSameNameAsExistingGroup() throws RepositoryException {
+        final String userName = uniqueId();
+        final UserManager userManager = AccessControlUtil.getUserManager(session);
+
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+        userManager.createGroup(userName);
+
+        thrown.expect(RepositoryException.class);
+        thrown.expectMessage("A group already exists with the requested name: " + userName);
+        contentCreator.createUser(userName, userName, null);
+    }
+
+    //------DefaultContentCreator#switchCurrentNode(String, String)------//
+
+    @Test
+    public void switchParentNodeToANewOne() throws RepositoryException, NoSuchFieldException {
+        final String[] nodeNames = {uniqueId(), uniqueId()};
+        final StringBuilder pathBuilder = new StringBuilder();
+        for(String newNodeName: nodeNames){
+            pathBuilder.append("/").append(newNodeName);
+        }
+        final String subNodes = pathBuilder.toString();
+        final String newNodeType = "nt:unstructured";
+        final Stack<Node> parentNodeStack = (Stack<Node>) PrivateAccessor.getField(contentCreator, "parentNodeStack");
+        final ContentImportListener listener = mockery.mock(ContentImportListener.class);
+
+        this.mockery.checking(new Expectations(){{
+            exactly(nodeNames.length).of(listener).onCreate(with(any(String.class)));
+        }});
+
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, listener);
+        contentCreator.prepareParsing(parentNode, null);
+
+        boolean result = contentCreator.switchCurrentNode(subNodes, newNodeType);
+        assertTrue(result);
+        //Checking that nodes for all names were created
+        Node current = parentNode;
+        for(String nodeName: nodeNames){
+            current = current.getNode(nodeName);
+            assertNotNull(current);
+            assertTrue(current.getPrimaryNodeType().isNodeType(newNodeType));
+        }
+
+        //Checking that last node is on top of the stack
+        assertEquals(current.getPath(), parentNodeStack.peek().getPath());
+        mockery.assertIsSatisfied();
+    }
+
+    @Test
+    public void switchNodeWithFirstExisting() throws NoSuchFieldException, RepositoryException {
+        final String[] nodeNames = {uniqueId(), uniqueId()};
+        final StringBuilder pathBuilder = new StringBuilder();
+        for(String newNodeName: nodeNames){
+            pathBuilder.append("/").append(newNodeName);
+        }
+        final String subNodes = pathBuilder.toString();
+        final String newNodeType = "nt:folder";
+        final String existingNodeType = "nt:unstructured";
+        final Stack<Node> parentNodeStack = (Stack<Node>) PrivateAccessor.getField(contentCreator, "parentNodeStack");
+
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+
+        parentNode.addNode(nodeNames[0], existingNodeType);
+        boolean result = contentCreator.switchCurrentNode(subNodes, newNodeType);
+        assertTrue(result);
+
+        Node current = parentNode.getNode(nodeNames[0]);
+        assertNotNull(current);
+        //Checking that first node has saved old nodetype
+        assertTrue(current.getPrimaryNodeType().isNodeType(existingNodeType));
+        for(int i = 1; i < nodeNames.length; i++){
+            current = current.getNode(nodeNames[i]);
+            assertNotNull(current);
+            assertTrue(current.getPrimaryNodeType().isNodeType(newNodeType));
+        }
+
+        //Checking that last node is on top of the stack
+        assertEquals(current.getPath(), parentNodeStack.peek().getPath());
+    }
+
+    @Test
+    public void switchNodeWithNullNodeType() throws RepositoryException, NoSuchFieldException {
+        final String[] nodeNames = {uniqueId(), uniqueId()};
+        final StringBuilder pathBuilder = new StringBuilder();
+        for(String newNodeName: nodeNames){
+            pathBuilder.append("/").append(newNodeName);
+        }
+        final String subNodes = pathBuilder.toString();
+
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+
+        boolean result = contentCreator.switchCurrentNode(subNodes, null);
+        assertFalse(result);
+        assertFalse(parentNode.hasNodes());
     }
 
     private final String uniqueId() {
