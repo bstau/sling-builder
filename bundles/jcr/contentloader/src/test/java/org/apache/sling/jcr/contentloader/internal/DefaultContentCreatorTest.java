@@ -22,12 +22,17 @@ import java.util.*;
 
 import javax.jcr.*;
 import javax.jcr.nodetype.NodeType;
+import javax.jcr.security.AccessControlManager;
+import javax.jcr.security.AccessControlPolicy;
+import javax.jcr.security.Privilege;
 
 import junitx.util.PrivateAccessor;
+import org.apache.jackrabbit.api.security.principal.PrincipalManager;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
+import org.apache.jackrabbit.core.security.authorization.PrivilegeRegistry;
 import org.apache.jackrabbit.value.BinaryValue;
 import org.apache.sling.commons.testing.jcr.RepositoryProvider;
 import org.apache.sling.jcr.api.SlingRepository;
@@ -912,6 +917,26 @@ public class DefaultContentCreatorTest {
         boolean result = contentCreator.switchCurrentNode(subNodes, null);
         assertFalse(result);
         assertFalse(parentNode.hasNodes());
+    }
+
+    //------DefaultContentCreator#createAce(String, String[], String[], String)------//
+
+    @Test
+    public void createAccessControlEntryForNonExistingPrincipal() throws RepositoryException {
+        final String newPrincipalId = uniqueId();
+        final String[] grantedPrivilegesNames = {Privilege.JCR_READ};
+        final String[] deniedPrivilegesNames = {Privilege.JCR_WRITE};
+
+        contentCreator.init(U.createImportOptions(false, false, false, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+
+        PrincipalManager principalManager = AccessControlUtil.getPrincipalManager(session);
+        assertNull(principalManager.getPrincipal(newPrincipalId));
+
+        thrown.expect(RepositoryException.class);
+        thrown.expectMessage("No principal found for id: " + newPrincipalId);
+        contentCreator.createAce(newPrincipalId, grantedPrivilegesNames, deniedPrivilegesNames, null);
     }
 
     private final String uniqueId() {
