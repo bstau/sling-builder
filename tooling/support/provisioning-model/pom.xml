@@ -18,11 +18,11 @@
         <groupId>org.apache.sling</groupId>
         <artifactId>sling</artifactId>
         <version>22</version>
-        <relativePath/>
+        <relativePath />
     </parent>
 
     <artifactId>org.apache.sling.provisioning.model</artifactId>
-    <version>1.1.1-SNAPSHOT</version>
+    <version>1.2.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <name>Apache Sling Provisioning Model</name>
@@ -61,7 +61,7 @@
         <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.configadmin</artifactId>
-            <version>1.2.8</version>
+            <version>1.8.6</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

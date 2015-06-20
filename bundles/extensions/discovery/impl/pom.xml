@@ -29,7 +29,7 @@
 
     <artifactId>org.apache.sling.discovery.impl</artifactId>
     <packaging>bundle</packaging>
-    <version>1.1.5-SNAPSHOT</version>
+    <version>1.1.7-SNAPSHOT</version>
 
     <name>Apache Sling Resource-Based Discovery Service</name>
     <description>Implementation of Apache Sling Discovery based on Sling Resource providing a ClusterView through resource-clustering (eg jackrabbit clustering) and a TopologyView through HTTP POST heartbeats announcing sub-topologies to each other.</description>

@@ -39,7 +39,7 @@ public class PathEntryTest {
     @Test
     public void testGetContentPaths(){
         final Bundle bundle = mockery.mock(Bundle.class);
-        final Dictionary<String, String> dict = new Hashtable<String, String>();
+        final Dictionary<String, String> dict = new Hashtable();
         dict.put("Bnd-LastModified", "1258555936230");
         dict.put(PathEntry.CONTENT_HEADER, "test1, test2");
         //PathEntry#getContentPaths should return this value

@@ -24,8 +24,10 @@ import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.felix.cm.file.ConfigurationHandler;
 
@@ -41,6 +43,17 @@ public abstract class ModelUtility {
      * @param additional The additional model.
      */
     public static void merge(final Model base, final Model additional) {
+        merge(base, additional, true);
+    }
+
+    /**
+     * Merge the additional model into the base model.
+     * @param base The base model.
+     * @param additional The additional model.
+     * @param handleRemove Handle special remove run mode
+     * @since 1.2
+     */
+    public static void merge(final Model base, final Model additional, final boolean handleRemove) {
         // features
         for(final Feature feature : additional.getFeatures()) {
             final Feature baseFeature = base.getOrCreateFeature(feature.getName());
@@ -52,57 +65,59 @@ public abstract class ModelUtility {
             for(final RunMode runMode : feature.getRunModes()) {
                 // check for special remove run mode
                 String names[] = runMode.getNames();
-                if ( names != null ) {
-                    int removeIndex = -1;
-                    int index = 0;
-                    for(final String name : names) {
-                        if ( name.equals(ModelConstants.RUN_MODE_REMOVE) ) {
-                            removeIndex = index;
-                            break;
-                        }
-                        index++;
-                    }
-                    if ( removeIndex != -1 ) {
-                        String[] newNames = null;
-                        if ( names.length > 1 ) {
-                            newNames = new String[names.length - 1];
-                            index = 0;
-                            for(final String name : names) {
-                                if ( !name.equals(ModelConstants.RUN_MODE_REMOVE) ) {
-                                    newNames[index++] = name;
-                                }
+                if ( handleRemove ) {
+                    if ( names != null ) {
+                        int removeIndex = -1;
+                        int index = 0;
+                        for(final String name : names) {
+                            if ( name.equals(ModelConstants.RUN_MODE_REMOVE) ) {
+                                removeIndex = index;
+                                break;
                             }
+                            index++;
                         }
-                        names = newNames;
-                        final RunMode baseRunMode = baseFeature.getRunMode(names);
-                        if ( baseRunMode != null ) {
-
-                            // artifact groups
-                            for(final ArtifactGroup group : runMode.getArtifactGroups()) {
-                                for(final Artifact artifact : group) {
-                                    for(final ArtifactGroup searchGroup : baseRunMode.getArtifactGroups()) {
-                                        final Artifact found = searchGroup.search(artifact);
-                                        if ( found != null ) {
-                                            searchGroup.remove(found);
-                                        }
+                        if ( removeIndex != -1 ) {
+                            String[] newNames = null;
+                            if ( names.length > 1 ) {
+                                newNames = new String[names.length - 1];
+                                index = 0;
+                                for(final String name : names) {
+                                    if ( !name.equals(ModelConstants.RUN_MODE_REMOVE) ) {
+                                        newNames[index++] = name;
                                     }
                                 }
                             }
+                            names = newNames;
+                            final RunMode baseRunMode = baseFeature.getRunMode(names);
+                            if ( baseRunMode != null ) {
 
-                            // configurations
-                            for(final Configuration config : runMode.getConfigurations()) {
-                                final Configuration found = baseRunMode.getConfiguration(config.getPid(), config.getFactoryPid());
-                                if ( found != null ) {
-                                    baseRunMode.getConfigurations().remove(found);
+                                // artifact groups
+                                for(final ArtifactGroup group : runMode.getArtifactGroups()) {
+                                    for(final Artifact artifact : group) {
+                                        for(final ArtifactGroup searchGroup : baseRunMode.getArtifactGroups()) {
+                                            final Artifact found = searchGroup.search(artifact);
+                                            if ( found != null ) {
+                                                searchGroup.remove(found);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // configurations
+                                for(final Configuration config : runMode.getConfigurations()) {
+                                    final Configuration found = baseRunMode.getConfiguration(config.getPid(), config.getFactoryPid());
+                                    if ( found != null ) {
+                                        baseRunMode.getConfigurations().remove(found);
+                                    }
+                                }
+
+                                // settings
+                                for(final Map.Entry<String, String> entry : runMode.getSettings() ) {
+                                    baseRunMode.getSettings().remove(entry.getKey());
                                 }
                             }
-
-                            // settings
-                            for(final Map.Entry<String, String> entry : runMode.getSettings() ) {
-                                baseRunMode.getSettings().remove(entry.getKey());
-                            }
+                            continue;
                         }
-                        continue;
                     }
                 }
                 final RunMode baseRunMode = baseFeature.getOrCreateRunMode(names);
@@ -125,11 +140,8 @@ public abstract class ModelUtility {
                 // configurations
                 for(final Configuration config : runMode.getConfigurations()) {
                     final Configuration found = baseRunMode.getOrCreateConfiguration(config.getPid(), config.getFactoryPid());
-                    final Enumeration<String> e = config.getProperties().keys();
-                    while ( e.hasMoreElements() ) {
-                        final String key = e.nextElement();
-                        found.getProperties().put(key, config.getProperties().get(key));
-                    }
+
+                    mergeConfiguration(found, config);
                 }
 
                 // settings
@@ -138,6 +150,102 @@ public abstract class ModelUtility {
                 }
             }
 
+        }
+    }
+
+    /**
+     * Merge two configurations
+     * @param baseConfig The base configuration.
+     * @param mergeConfig The merge configuration.
+     */
+    private static void mergeConfiguration(final Configuration baseConfig, final Configuration mergeConfig) {
+        // check for merge mode
+        final boolean isNew = baseConfig.getProperties().isEmpty();
+        if ( isNew ) {
+            copyConfigurationProperties(baseConfig, mergeConfig);
+            final Object mode = mergeConfig.getProperties().get(ModelConstants.CFG_UNPROCESSED_MODE);
+            if ( mode != null ) {
+                baseConfig.getProperties().put(ModelConstants.CFG_UNPROCESSED_MODE, mode);
+            }
+        } else {
+            final boolean baseIsRaw = baseConfig.getProperties().get(ModelConstants.CFG_UNPROCESSED) != null;
+            final boolean mergeIsRaw = mergeConfig.getProperties().get(ModelConstants.CFG_UNPROCESSED) != null;
+            // simplest case, both are raw
+            if ( baseIsRaw && mergeIsRaw ) {
+                final String cfgMode = (String)mergeConfig.getProperties().get(ModelConstants.CFG_UNPROCESSED_MODE);
+                if ( cfgMode == null || ModelConstants.CFG_MODE_OVERWRITE.equals(cfgMode) ) {
+                    copyConfigurationProperties(baseConfig, mergeConfig);
+                } else {
+                    final Configuration newConfig = new Configuration(baseConfig.getPid(), baseConfig.getFactoryPid());
+                    getProcessedConfiguration(null, newConfig, baseConfig, null);
+                    clearConfiguration(baseConfig);
+                    copyConfigurationProperties(baseConfig, newConfig);
+
+                    clearConfiguration(newConfig);
+                    getProcessedConfiguration(null, newConfig, mergeConfig, null);
+
+                    if ( baseConfig.isSpecial() ) {
+                        final String baseValue = baseConfig.getProperties().get(baseConfig.getPid()).toString();
+                        final String mergeValue = newConfig.getProperties().get(baseConfig.getPid()).toString();
+                        baseConfig.getProperties().put(baseConfig.getPid(), baseValue + "\n" + mergeValue);
+                    } else {
+                        copyConfigurationProperties(baseConfig, newConfig);
+                    }
+                }
+
+            // another simple case, both are not raw
+            } else if ( !baseIsRaw && !mergeIsRaw ) {
+                // merge mode is always overwrite
+                clearConfiguration(baseConfig);
+                copyConfigurationProperties(baseConfig, mergeConfig);
+
+            // base is not raw but merge is
+            } else if ( !baseIsRaw && mergeIsRaw ) {
+                final String cfgMode = (String)mergeConfig.getProperties().get(ModelConstants.CFG_UNPROCESSED_MODE);
+                if ( cfgMode == null || ModelConstants.CFG_MODE_OVERWRITE.equals(cfgMode) ) {
+                    clearConfiguration(baseConfig);
+                    copyConfigurationProperties(baseConfig, mergeConfig);
+                } else {
+                    final Configuration newMergeConfig = new Configuration(mergeConfig.getPid(), mergeConfig.getFactoryPid());
+                    getProcessedConfiguration(null, newMergeConfig, mergeConfig, null);
+
+                    if ( baseConfig.isSpecial() ) {
+                        final String baseValue = baseConfig.getProperties().get(baseConfig.getPid()).toString();
+                        final String mergeValue = newMergeConfig.getProperties().get(baseConfig.getPid()).toString();
+                        baseConfig.getProperties().put(baseConfig.getPid(), baseValue + "\n" + mergeValue);
+                    } else {
+                        copyConfigurationProperties(baseConfig, newMergeConfig);
+                    }
+                }
+
+                // base is raw, but merge is not raw
+            } else {
+                // merge mode is always overwrite
+                clearConfiguration(baseConfig);
+                copyConfigurationProperties(baseConfig, mergeConfig);
+            }
+        }
+    }
+
+    private static void clearConfiguration(final Configuration cfg) {
+        final Set<String> keys = new HashSet<String>();
+        final Enumeration<String> e = cfg.getProperties().keys();
+        while ( e.hasMoreElements() ) {
+            keys.add(e.nextElement());
+        }
+
+        for(final String key : keys) {
+            cfg.getProperties().remove(key);
+        }
+    }
+
+    private static void copyConfigurationProperties(final Configuration baseConfig, final Configuration mergeConfig) {
+        final Enumeration<String> e = mergeConfig.getProperties().keys();
+        while ( e.hasMoreElements() ) {
+            final String key = e.nextElement();
+            if ( !key.equals(ModelConstants.CFG_UNPROCESSED_MODE) ) {
+                baseConfig.getProperties().put(key, mergeConfig.getProperties().get(key));
+            }
         }
     }
 
@@ -188,11 +296,11 @@ public abstract class ModelUtility {
                     newGroup.setLocation(group.getLocation());
 
                     for(final Artifact artifact : group) {
-                        final Artifact newArtifact = new Artifact(replace(feature, artifact.getGroupId(), resolver),
-                                replace(feature, artifact.getArtifactId(), resolver),
-                                replace(feature, artifact.getVersion(), resolver),
-                                replace(feature, artifact.getClassifier(), resolver),
-                                replace(feature, artifact.getType(), resolver));
+                        final Artifact newArtifact = new Artifact(replace(newFeature, artifact.getGroupId(), resolver),
+                                replace(newFeature, artifact.getArtifactId(), resolver),
+                                replace(newFeature, artifact.getVersion(), resolver),
+                                replace(newFeature, artifact.getClassifier(), resolver),
+                                replace(newFeature, artifact.getType(), resolver));
                         newArtifact.setComment(artifact.getComment());
                         newArtifact.setLocation(artifact.getLocation());
 
@@ -204,86 +312,14 @@ public abstract class ModelUtility {
                 newRunMode.getConfigurations().setLocation(runMode.getConfigurations().getLocation());
                 for(final Configuration config : runMode.getConfigurations()) {
                     final Configuration newConfig = newRunMode.getOrCreateConfiguration(config.getPid(), config.getFactoryPid());
-                    newConfig.setComment(config.getComment());
-                    newConfig.setLocation(config.getLocation());
 
-                    // check for raw configuration
-                    final String rawConfig = (String)config.getProperties().get(ModelConstants.CFG_UNPROCESSED);
-                    if ( rawConfig != null ) {
-                        if ( config.isSpecial() ) {
-                            newConfig.getProperties().put(config.getPid(), rawConfig);
-                        } else {
-                            final String format = (String)config.getProperties().get(ModelConstants.CFG_UNPROCESSED_FORMAT);
-
-                            if ( ModelConstants.CFG_FORMAT_PROPERTIES.equals(format) ) {
-                                // properties
-                                final Properties props = new Properties();
-                                try {
-                                    props.load(new StringReader(rawConfig));
-                                } catch ( final IOException ioe) {
-                                    throw new IllegalArgumentException("Unable to read configuration properties.", ioe);
-                                }
-                                final Enumeration<Object> i = props.keys();
-                                while ( i.hasMoreElements() ) {
-                                    final String key = (String)i.nextElement();
-                                    newConfig.getProperties().put(key, props.get(key));
-                                }
-                            } else {
-                                // Apache Felix CA format
-                                // the raw format might have comments, we have to remove them first
-                                final StringBuilder sb = new StringBuilder();
-                                try {
-                                    final LineNumberReader lnr = new LineNumberReader(new StringReader(rawConfig));
-                                    String line = null;
-                                    while ((line = lnr.readLine()) != null ) {
-                                        line = line.trim();
-                                        if ( line.isEmpty() || line.startsWith("#")) {
-                                            continue;
-                                        }
-                                        sb.append(line);
-                                        sb.append('\n');
-                                    }
-                                } catch ( final IOException ioe) {
-                                    throw new IllegalArgumentException("Unable to read configuration properties: " + config, ioe);
-                                }
-
-                                ByteArrayInputStream bais = null;
-                                try {
-                                    bais = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
-                                    @SuppressWarnings("unchecked")
-                                    final Dictionary<String, Object> props = ConfigurationHandler.read(bais);
-                                    final Enumeration<String> i = props.keys();
-                                    while ( i.hasMoreElements() ) {
-                                        final String key = i.nextElement();
-                                        newConfig.getProperties().put(key, props.get(key));
-                                    }
-                                } catch ( final IOException ioe) {
-                                    throw new IllegalArgumentException("Unable to read configuration properties: " + config, ioe);
-                                } finally {
-                                    if ( bais != null ) {
-                                        try {
-                                            bais.close();
-                                        } catch ( final IOException ignore ) {
-                                            // ignore
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        // simply copy
-                        final Enumeration<String> i = config.getProperties().keys();
-                        while ( i.hasMoreElements() ) {
-                            final String key = i.nextElement();
-                            newConfig.getProperties().put(key, config.getProperties().get(key));
-                        }
-                    }
+                    getProcessedConfiguration(newFeature, newConfig, config, resolver);
                 }
 
                 newRunMode.getSettings().setComment(runMode.getSettings().getComment());
                 newRunMode.getSettings().setLocation(runMode.getSettings().getLocation());
                 for(final Map.Entry<String, String> entry : runMode.getSettings() ) {
-                    newRunMode.getSettings().put(entry.getKey(), replace(feature, entry.getValue(),
+                    newRunMode.getSettings().put(entry.getKey(), replace(newFeature, entry.getValue(),
                             new VariableResolver() {
 
                                 @Override
@@ -292,9 +328,9 @@ public abstract class ModelUtility {
                                         return "${sling.home}";
                                     }
                                     if ( resolver != null ) {
-                                        return resolver.resolve(feature, name);
+                                        return resolver.resolve(newFeature, name);
                                     }
-                                    return feature.getVariables().get(name);
+                                    return newFeature.getVariables().get(name);
                                 }
                             }));
                 }
@@ -420,5 +456,89 @@ public abstract class ModelUtility {
             return null;
         }
         return errors;
+    }
+
+    private static void getProcessedConfiguration(
+            final Feature feature,
+            final Configuration newConfig,
+            final Configuration config,
+            final VariableResolver resolver) {
+        newConfig.setComment(config.getComment());
+        newConfig.setLocation(config.getLocation());
+
+        // check for raw configuration
+        String rawConfig = (String)config.getProperties().get(ModelConstants.CFG_UNPROCESSED);
+        if ( rawConfig != null ) {
+            if ( resolver != null ) {
+                rawConfig = replace(feature, rawConfig, resolver);
+            }
+            if ( config.isSpecial() ) {
+                newConfig.getProperties().put(config.getPid(), rawConfig);
+            } else {
+                final String format = (String)config.getProperties().get(ModelConstants.CFG_UNPROCESSED_FORMAT);
+
+                if ( ModelConstants.CFG_FORMAT_PROPERTIES.equals(format) ) {
+                    // properties
+                    final Properties props = new Properties();
+                    try {
+                        props.load(new StringReader(rawConfig));
+                    } catch ( final IOException ioe) {
+                        throw new IllegalArgumentException("Unable to read configuration properties.", ioe);
+                    }
+                    final Enumeration<Object> i = props.keys();
+                    while ( i.hasMoreElements() ) {
+                        final String key = (String)i.nextElement();
+                        newConfig.getProperties().put(key, props.get(key));
+                    }
+                } else {
+                    // Apache Felix CA format
+                    // the raw format might have comments, we have to remove them first
+                    final StringBuilder sb = new StringBuilder();
+                    try {
+                        final LineNumberReader lnr = new LineNumberReader(new StringReader(rawConfig));
+                        String line = null;
+                        while ((line = lnr.readLine()) != null ) {
+                            line = line.trim();
+                            if ( line.isEmpty() || line.startsWith("#")) {
+                                continue;
+                            }
+                            sb.append(line);
+                            sb.append('\n');
+                        }
+                    } catch ( final IOException ioe) {
+                        throw new IllegalArgumentException("Unable to read configuration properties: " + config, ioe);
+                    }
+
+                    ByteArrayInputStream bais = null;
+                    try {
+                        bais = new ByteArrayInputStream(sb.toString().getBytes("UTF-8"));
+                        @SuppressWarnings("unchecked")
+                        final Dictionary<String, Object> props = ConfigurationHandler.read(bais);
+                        final Enumeration<String> i = props.keys();
+                        while ( i.hasMoreElements() ) {
+                            final String key = i.nextElement();
+                            newConfig.getProperties().put(key, props.get(key));
+                        }
+                    } catch ( final IOException ioe) {
+                        throw new IllegalArgumentException("Unable to read configuration properties: " + config, ioe);
+                    } finally {
+                        if ( bais != null ) {
+                            try {
+                                bais.close();
+                            } catch ( final IOException ignore ) {
+                                // ignore
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            // simply copy
+            final Enumeration<String> i = config.getProperties().keys();
+            while ( i.hasMoreElements() ) {
+                final String key = i.nextElement();
+                newConfig.getProperties().put(key, config.getProperties().get(key));
+            }
+        }
     }
 }
