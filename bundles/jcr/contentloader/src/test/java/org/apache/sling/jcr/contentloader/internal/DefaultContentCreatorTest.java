@@ -22,8 +22,6 @@ import java.util.*;
 
 import javax.jcr.*;
 import javax.jcr.nodetype.NodeType;
-import javax.jcr.security.AccessControlManager;
-import javax.jcr.security.AccessControlPolicy;
 import javax.jcr.security.Privilege;
 
 import junitx.util.PrivateAccessor;
@@ -32,7 +30,6 @@ import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
-import org.apache.jackrabbit.core.security.authorization.PrivilegeRegistry;
 import org.apache.jackrabbit.value.BinaryValue;
 import org.apache.sling.commons.testing.jcr.RepositoryProvider;
 import org.apache.sling.jcr.api.SlingRepository;
