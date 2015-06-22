@@ -769,6 +769,46 @@ public class DefaultContentCreatorTest {
         mockery.assertIsSatisfied();
     }
 
+    //------DefaultContentCreator#createProperty(String, Object)------//
+
+    @Test
+    public void createPropertyWithNullValue() throws RepositoryException {
+        final String propertyName = uniqueId();
+        final String propertyValue = uniqueId();
+        final ContentImportListener listener = mockery.mock(ContentImportListener.class);
+
+        this.mockery.checking(new Expectations(){{
+            oneOf(listener).onDelete(with(any(String.class)));
+        }});
+
+        contentCreator.init(U.createImportOptions(false, false, true, false, false),
+                new HashMap<String, ContentReader>(), null, listener);
+        contentCreator.prepareParsing(parentNode, null);
+        parentNode.setProperty(propertyName, propertyValue);
+
+        contentCreator.createProperty(propertyName, null);
+        assertFalse(parentNode.hasProperty(propertyName));
+
+        mockery.assertIsSatisfied();
+    }
+
+    @Test
+    public void createExistingProperty() throws RepositoryException {
+        final String propertyName = uniqueId();
+        final String propertyValue = uniqueId();
+
+        contentCreator.init(U.createImportOptions(false, false, true, false, false),
+                new HashMap<String, ContentReader>(), null, null);
+        contentCreator.prepareParsing(parentNode, null);
+        parentNode.setProperty(propertyName, propertyValue);
+        session.save();
+
+        contentCreator.createProperty(propertyName, uniqueId());
+        assertTrue(parentNode.hasProperty(propertyName));
+        assertEquals("Property should contain old value", propertyValue, parentNode.getProperty(propertyName).getString());
+        mockery.assertIsSatisfied();
+    }
+
     //------DefaultContentCreator#createUser(String, String, Map<String, Object>)------//
 
     @Test
