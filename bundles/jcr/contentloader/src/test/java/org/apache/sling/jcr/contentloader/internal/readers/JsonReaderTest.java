@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sling.jcr.contentloader.internal;
+package org.apache.sling.jcr.contentloader.internal.readers;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -27,7 +27,6 @@ import javax.jcr.RepositoryException;
 import org.apache.sling.commons.json.JSONArray;
 import org.apache.sling.commons.json.JSONException;
 import org.apache.sling.jcr.contentloader.ContentCreator;
-import org.apache.sling.jcr.contentloader.internal.readers.JsonReader;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.Sequence;
