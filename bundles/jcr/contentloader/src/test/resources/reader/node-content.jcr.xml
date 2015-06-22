@@ -1,4 +1,5 @@
-/*
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,34 +16,25 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
-package org.apache.sling.jcr.contentloader.internal.it;
-
-import org.apache.sling.jcr.contentloader.internal.*;
-import org.apache.sling.paxexam.util.SlingPaxOptions;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.exam.options.CompositeOption;
-
-import javax.inject.Inject;
-
-import static org.junit.Assert.*;
-
-@RunWith(PaxExam.class)
-public class BundleContentLoaderIT {
-
-    @Inject
-    ContentReaderWhiteboard whiteboard;
-
-    @Test
-    public void dummyTest(){
-        assertNotNull(whiteboard);
-    }
-
-    @org.ops4j.pax.exam.Configuration
-    public Option[] config() {
-        return U.paxConfig();
-    }
-}
+-->
+<node xmlns:nt="http://www.jcp.org/jcr/nt/1.0">
+    <name>nodeName</name>
+    <primaryNodeType>type</primaryNodeType>
+    <mixinNodeTypes>
+        <mixinNodeType>mixtype1</mixinNodeType>
+        <mixinNodeType>mixtype2</mixinNodeType>
+    </mixinNodeTypes>
+    <properties>
+        <property>
+            <name>propName</name>
+            <value>propValue</value>
+            <type>String</type>
+        </property>
+        <!-- more properties -->
+    </properties>
+    <nodes>
+        <!-- child nodes -->
+        <nt:file src="testfile.txt" mimeType="application/test" lastModified="1977-06-01T07:00:00+0100"/>
+        <nt:file src="testfile.txt" mimeType="application/test" lastModified="1977-06-01T07:00:00+0100"/>
+    </nodes>
+</node>
