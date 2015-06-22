@@ -28,7 +28,6 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class WebConsolePrinterTest {
@@ -68,20 +67,20 @@ public class WebConsolePrinterTest {
             assertRegexp(reader.readLine(), ".*Name.*ApacheSling.*");
             assertRegexp(reader.readLine(), ".*Id.*");
             reader.readLine();
-            assertRegexp(reader.readLine(), "^Job.*testName3.*");
-            assertRegexp(reader.readLine(), "^Trigger.*Trigger.*DEFAULT.testName3.*");
+            assertRegexp(reader.readLine(), "^Job.*testName[123].*");
+            assertRegexp(reader.readLine(), "^Trigger.*Trigger.*DEFAULT.testName[123].*");
             reader.readLine();
-            assertRegexp(reader.readLine(), "^Job.*testName2.*");
-            assertRegexp(reader.readLine(), "^Trigger.*Trigger.*DEFAULT.testName2.*");
+            assertRegexp(reader.readLine(), "^Job.*testName[123].*");
+            assertRegexp(reader.readLine(), "^Trigger.*Trigger.*DEFAULT.testName[123].*");
             reader.readLine();
-            assertRegexp(reader.readLine(), "^Job.*testName1.*");
-            assertRegexp(reader.readLine(), "^Trigger.*Trigger.*DEFAULT.testName1.*");
+            assertRegexp(reader.readLine(), "^Job.*testName[123].*");
+            assertRegexp(reader.readLine(), "^Trigger.*Trigger.*DEFAULT.testName[123].*");
         } finally {
             reader.close();
             f.delete();
         }
     }
-    
+
     private void assertRegexp(String input, String regexp) {
         assertTrue("Expecting regexp match: '" + input + "' / '" + regexp + "'", Pattern.matches(regexp, input));
     }
