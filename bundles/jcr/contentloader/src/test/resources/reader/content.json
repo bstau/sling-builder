@@ -1,9 +1,47 @@
 {
-  "primaryNodeType": "nt:unstructured",
-  "nodetypes" : {
-    "sling:resourceType" : "jsnodetypes"
-  },
-  "documentation" : {
-    "sling:resourceType" : "jsnodetypes/documentation"
+  // child node name
+  "nodename": {
+    // optional primary node type, default "nt:unstructured"
+    "jcr:primaryType": "sling:ScriptedComponent",
+    // optional mixin node types as array
+    "jcr:mixinTypes": [],
+    // additional properties as name value pairs.
+    // Multi-value properties are defined as JSON array.
+    // Property type is derived from the value
+
+    // String value (default)
+    "sling:contentClass": "com.day.sling.jcr.test.Test",
+    // Multi-value String
+    "sampleMulti": [
+      "v1",
+      "v2"
+    ],
+    // Long value, single and multi
+    "sampleStruct": 1,
+    "sampleStructMulti": [
+      1,
+      2,
+      3
+    ],
+    // Date follows pattern yyyy-mm-ddTHH:MM:SS.sss±HH:MM
+    "sampleDate": "2014-11-27T13:26:00.000+01:00",
+    // JCR Node Reference with name prefix (removed to derive node name)
+    "jcr:reference:sampleRef": "386b0f48-49c3-4c58-8735-ceee6bfc1933",
+    // JCR Path with name prefix (removed to derive node name)
+    "jcr:path:samplePath": "/content/data",
+    // JCR Name with name prefix (removed to derive node name)
+    "jcr:name:sampleName": "data",
+    // URI with name prefix (removed to derive node name)
+    "jcr:uri:sampleUri": "http://sling.apache.org/",
+    // Child nodes are simple JSON objects
+    "sling:scripts": {
+      "jcr:primaryType": "sling:ScriptList",
+      "sling:Script": {
+        "jcr:primaryType": "sling:Script",
+        "sling:name": "/test/content/jsp/start.jsp",
+        "sling:type": "jsp",
+        "sling:glob": "*"
+      }
+    }
   }
 }

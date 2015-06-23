@@ -18,29 +18,37 @@
  */
 package org.apache.sling.jcr.contentloader.internal.it;
 
-import org.apache.sling.jcr.contentloader.internal.*;
-import org.apache.sling.paxexam.util.SlingPaxOptions;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.exam.options.CompositeOption;
+import org.osgi.framework.BundleContext;
+import org.apache.sling.jcr.api.SlingRepository;
+import org.osgi.framework.BundleException;
 
 import javax.inject.Inject;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 
 import static org.junit.Assert.*;
 
 @Ignore
 @RunWith(PaxExam.class)
 public class BundleContentLoaderIT {
+    private static final String BUNDLE_PATH = "/Users/Petr/Development/sling/bundles/jcr/contentloader/src/test/resources/org.apache.sling.installer.it-3.6.7-SNAPSHOT-testbundle-1.0.jar";
 
     @Inject
-    ContentReaderWhiteboard whiteboard;
+    private BundleContext bundleContext;
+
+    @Inject
+    private SlingRepository repository;
 
     @Test
-    public void dummyTest(){
-        assertNotNull(whiteboard);
+    public void dummyTest() throws BundleException, RepositoryException {
+        Session s = repository.loginAdministrative(null);
+        bundleContext.installBundle("file:" + BUNDLE_PATH);
+        assertTrue("Ndode doesn't created", s.itemExists("/home"));
     }
 
     @org.ops4j.pax.exam.Configuration

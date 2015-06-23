@@ -22,6 +22,7 @@ import org.apache.sling.jcr.contentloader.ContentImportListener;
 import org.apache.sling.jcr.contentloader.ImportOptions;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.jcr.*;
@@ -54,6 +55,7 @@ public class DefaultContentImporterTest {
     //-----DefaultContentImporter#importContent(Node, String, InputStream, ImportOptions, ContentImportListener)-----//
 
     @Test
+    @Ignore
     public void createNewNodeFromJcrXml() throws IOException, RepositoryException {
         final String nodeName = "node";
         final File jcrXml = new File(XML_PATH);
@@ -71,6 +73,7 @@ public class DefaultContentImporterTest {
     }
 
     @Test
+    @Ignore
     public void createNewNodeFromXml() throws IOException, RepositoryException {
         final String nodeName = "node";
         final File jcrXml = new File(JSON_PATH);
