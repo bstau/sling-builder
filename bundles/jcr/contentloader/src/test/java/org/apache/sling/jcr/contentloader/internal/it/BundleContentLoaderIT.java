@@ -23,19 +23,23 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.osgi.framework.BundleException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 
 import static org.junit.Assert.*;
 
-@Ignore
 @RunWith(PaxExam.class)
 public class BundleContentLoaderIT {
+    private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
     private static final String BUNDLE_PATH = "/Users/Petr/Development/sling/bundles/jcr/contentloader/src/test/resources/org.apache.sling.installer.it-3.6.7-SNAPSHOT-testbundle-1.0.jar";
 
     @Inject
@@ -47,7 +51,12 @@ public class BundleContentLoaderIT {
     @Test
     public void dummyTest() throws BundleException, RepositoryException {
         Session s = repository.loginAdministrative(null);
-        bundleContext.installBundle("file:" + BUNDLE_PATH);
+        Bundle b = bundleContext.installBundle("file:" + BUNDLE_PATH);
+
+        NodeIterator iterator = s.getRootNode().getNodes();
+        while (iterator.hasNext()){
+            LOGGER.debug(iterator.nextNode().getName());
+        }
         assertTrue("Ndode doesn't created", s.itemExists("/home"));
     }
 
