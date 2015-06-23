@@ -20,6 +20,7 @@ package org.apache.sling.jcr.contentloader.internal.it;
 
 import org.apache.sling.jcr.contentloader.internal.*;
 import org.apache.sling.paxexam.util.SlingPaxOptions;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
@@ -30,6 +31,7 @@ import javax.inject.Inject;
 
 import static org.junit.Assert.*;
 
+@Ignore
 @RunWith(PaxExam.class)
 public class BundleContentLoaderIT {
 
