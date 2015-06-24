@@ -41,8 +41,8 @@ import static org.apache.sling.jcr.contentloader.internal.DefaultContentImporter
 public class DefaultContentImporterTest {
     private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
-    private final String XML_PATH = "src/test/resources/reader/xml-node.xml";
-    private final String JSON_PATH = "src/test/resources/reader/json-node.json";
+    private final String XML_PATH = "src/test/resources/xml-node.xml";
+    private final String JSON_PATH = "src/test/resources/json-node.json";
     private final ImportOptions importOptions = U.createImportOptions(false, false, false, false, false);
 
     @Rule
