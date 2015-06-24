@@ -86,8 +86,7 @@
               <excludes>
                   <exclude>derby.log</exclude>
                   <exclude>jackrabbit/**</exclude>
-                  <exclude>src/test/resources/reader/testfile.txt</exclude>
-                  <exclude>src/test/resources/SLING-INF/libs/app.xml</exclude>
+                  <exclude>src/test/resources/**</exclude>
               </excludes>
           </configuration>
       </plugin>

@@ -18,8 +18,7 @@
  */
 package org.apache.sling.jcr.contentloader.internal.it;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
@@ -37,6 +36,7 @@ import javax.jcr.Session;
 
 import static org.junit.Assert.*;
 
+@Ignore
 @RunWith(PaxExam.class)
 public class BundleContentLoaderIT {
     private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());

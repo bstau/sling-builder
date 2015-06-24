@@ -125,11 +125,15 @@
                                     <fileset dir="${project.build.directory}/classes">
                                         <include name="META-INF/**" />
                                     </fileset>
+                                    <fileset dir="${project.basedir}/src/main/resources">
+                                        <include name="SLING-INF/**" />
+                                    </fileset>
                                     <manifest>
                                         <attribute name="Bundle-ManifestVersion" value="2" />
                                         <attribute name="Bundle-Name" value="OSGi controller test bundle" />
                                         <attribute name="Bundle-SymbolicName" value="osgi-installer-testbundle" />
                                         <attribute name="Bundle-Version" value="1.0" />
+                                        <attribute name="Sling-Initial-Content" value="SLING-INF/content/home" />
                                     </manifest>
                                 </jar>
                             </tasks>
@@ -152,6 +156,7 @@
                                         <attribute name="Bundle-Name" value="OSGi controller test bundle" />
                                         <attribute name="Bundle-SymbolicName" value="osgi-installer-testbundle" />
                                         <attribute name="Bundle-Version" value="1.1" />
+                                        <attribute name="Sling-Initial-Content" value="SLING-INF/libs/app.xml" />
                                     </manifest>
                                 </jar>
                             </tasks>
@@ -175,6 +180,7 @@
                                         <attribute name="Bundle-SymbolicName" value="osgi-installer-testbundle" />
                                         <attribute name="Bundle-Version" value="1.2" />
                                         <attribute name="Export-Package" value="com.example.testbundle.somepackage" />
+                                        <attribute name="Sling-Initial-Content" value="SLING-INF/libs/app.xml" />
                                     </manifest>
                                 </jar>
                             </tasks>

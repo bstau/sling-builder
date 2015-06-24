@@ -55,7 +55,6 @@ public class DefaultContentImporterTest {
     //-----DefaultContentImporter#importContent(Node, String, InputStream, ImportOptions, ContentImportListener)-----//
 
     @Test
-    @Ignore
     public void createNewNodeFromJcrXml() throws IOException, RepositoryException {
         final String nodeName = "node";
         final File jcrXml = new File(XML_PATH);
@@ -66,7 +65,7 @@ public class DefaultContentImporterTest {
 
         assertFalse(parentNode.hasNode(nodeName));
         assertFalse(callback.containsKey(ON_CREATE));
-        contentImporter.importContent(parentNode, "node.jcr.xml", is, options, listener);
+        contentImporter.importContent(parentNode, "node.xml", is, options, listener);
         //Checking that node was created and callback was called
         assertTrue("Node wasn't created.", parentNode.hasNode(nodeName));
         assertTrue(callback.containsKey(ON_CREATE));
