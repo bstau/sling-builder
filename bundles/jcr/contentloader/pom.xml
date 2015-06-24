@@ -75,7 +75,7 @@
         <configuration>
           <excludes>
             <exclude>src/test/resources/reader/testfile.txt</exclude>
-            <exclude>src/test/resources/reader/json-node.json</exclude>
+            <exclude>src/test/resources/json-node.json</exclude>
           </excludes>
         </configuration>
       </plugin>
