@@ -17,7 +17,15 @@
  * specific language governing permissions and limitations
  * under the License.
 -->
-<node xmlns:nt="http://www.jcp.org/jcr/nt/1.0">
-    <name>node</name>
-    <primaryNodeType>nt:unstructured</primaryNodeType>
-</node>
+<xmlNode>
+    <primaryNodeType>nt:file</primaryNodeType>
+
+    <mixinNodeType>mix:versionable</mixinNodeType>
+    <mixinNodeType>mix:lockable</mixinNodeType>
+
+    <property>
+        <name>prop</name>
+        <value>property value as string</value>
+        <type>String</type>
+    </property>
+</xmlNode>

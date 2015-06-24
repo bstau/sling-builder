@@ -16,14 +16,16 @@
  */
 package org.apache.sling.jcr.contentloader.internal;
 
-import org.apache.sling.commons.testing.jcr.RepositoryProvider;
-import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.jcr.contentloader.ContentImportListener;
+import org.apache.sling.jcr.contentloader.ContentImporter;
+import org.apache.sling.jcr.contentloader.ContentTypeUtil;
 import org.apache.sling.jcr.contentloader.ImportOptions;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.apache.sling.jcr.contentloader.internal.readers.JsonReader;
+import org.apache.sling.jcr.contentloader.internal.readers.XmlReader;
+import org.apache.sling.jcr.contentloader.internal.readers.ZipReader;
+import org.apache.sling.testing.mock.sling.ResourceResolverType;
+import org.apache.sling.testing.mock.sling.junit.SlingContext;
+import org.junit.*;
 
 import javax.jcr.*;
 import java.io.*;
@@ -35,61 +37,100 @@ import static org.junit.Assert.*;
 import static org.apache.sling.jcr.contentloader.internal.DefaultContentImporterTest.CustomContentImportListener.*;
 
 public class DefaultContentImporterTest {
+    private final String XML_PATH = "src/test/resources/reader/xml-node.xml";
+    private final String JSON_PATH = "src/test/resources/reader/json-node.json";
 
-    private final String XML_PATH = "src/test/resources/reader/node.xml";
-    private final String JSON_PATH = "src/test/resources/reader/content.json";
     private DefaultContentImporter contentImporter;
+
+    @Rule
+    public SlingContext context = new SlingContext(ResourceResolverType.JCR_OAK);
 
     private Session session;
     private Node parentNode;
 
     @Before
     public void setup() throws RepositoryException {
-        final SlingRepository repo = RepositoryProvider.instance().getRepository();
-        session = repo.loginAdministrative(null);
+        session = context.resourceResolver().adaptTo(Session.class);
         parentNode = session.getRootNode().addNode(getClass().getSimpleName()).addNode(uniqueId());
 
-        contentImporter = new DefaultContentImporter();
+        // prepare content readers
+        context.registerInjectActivateService(new JsonReader());
+        context.registerInjectActivateService(new XmlReader());
+        context.registerInjectActivateService(new ZipReader());
+
+        // whiteboard which holds readers
+        context.registerInjectActivateService(new ContentReaderWhiteboard());
+        context.registerInjectActivateService(new DefaultContentImporter());
+
+        contentImporter = (DefaultContentImporter) context.getService(ContentImporter.class);
     }
 
     //-----DefaultContentImporter#importContent(Node, String, InputStream, ImportOptions, ContentImportListener)-----//
 
     @Test
-    public void createNewNodeFromJcrXml() throws IOException, RepositoryException {
-        final String nodeName = "node";
-        final File jcrXml = new File(XML_PATH);
-        final FileInputStream is = new FileInputStream(jcrXml);
-        final ImportOptions options = U.createImportOptions(false, false, false, false, false);
+    public void createNodeFromJcrXml() throws IOException, RepositoryException {
+        final String nodeName = "xmlNode";
+
+        final FileInputStream nodeContent = new FileInputStream(XML_PATH);
+
         final CustomContentImportListener listener = new CustomContentImportListener();
-        final Map<String, String> callback = listener.callBackData;
+        final ImportOptions importOptions = U.createImportOptions(false, false, false, false, false);
 
         assertFalse(parentNode.hasNode(nodeName));
-        assertFalse(callback.containsKey(ON_CREATE));
-        contentImporter.importContent(parentNode, "node.xml", is, options, listener);
+        assertFalse(listener.callBackData.containsKey(ON_CREATE));
+
+        contentImporter.importContent(parentNode, "xmlNode.jcr.xml", nodeContent, importOptions, listener);
+
         //Checking that node was created and callback was called
         assertTrue("Node wasn't created.", parentNode.hasNode(nodeName));
-        assertTrue(callback.containsKey(ON_CREATE));
+        assertTrue(listener.callBackData.containsKey(ON_CREATE));
     }
 
     @Test
-    @Ignore
-    public void createNewNodeFromXml() throws IOException, RepositoryException {
-        final String nodeName = "node";
-        final File jcrXml = new File(JSON_PATH);
-        final FileInputStream is = new FileInputStream(jcrXml);
+    public void createNodeFromJson() throws IOException, RepositoryException {
+        final String nodeName = "jsonNode";
+
+        final FileInputStream nodeContent = new FileInputStream(JSON_PATH);
         final ImportOptions options = U.createImportOptions(false, false, false, false, false);
-        final CustomContentImportListener listener = new CustomContentImportListener();
-        final Map<String, String> callback = listener.callBackData;
 
         assertFalse(parentNode.hasNode(nodeName));
-        assertFalse(callback.containsKey(ON_CREATE));
-        contentImporter.importContent(parentNode, "node.json", is, options, listener);
-        //Checking that node was created and callback was called
+        contentImporter.importContent(parentNode, "jsonNode.json", nodeContent, options, new CustomContentImportListener());
+        //Checking that node was created
         assertTrue("Node wasn't created.", parentNode.hasNode(nodeName));
-        assertTrue(callback.containsKey(ON_CREATE));
     }
 
+    @Test
+    public void createNodeWithJcrXmlType() throws IOException, RepositoryException {
+        final String nodeName = "xmlNode";
 
+        final FileInputStream nodeContent = new FileInputStream(XML_PATH);
+
+        final ImportOptions options = U.createImportOptions(false, false, false, false, false);
+        final CustomContentImportListener listener = new CustomContentImportListener();
+
+        assertFalse(parentNode.hasNode(nodeName));
+        assertFalse(listener.callBackData.containsKey(ON_CREATE));
+        contentImporter.importContent(parentNode, "xmlNode.jcr.xml", ContentTypeUtil.TYPE_JCR_XML, nodeContent, options, listener);
+        //Checking that node was created
+        assertTrue("Node wasn't created.", parentNode.hasNode(nodeName));
+        assertTrue(listener.callBackData.containsKey(ON_CREATE));
+    }
+
+    @Test
+    public void createNodeWithJsonType() throws IOException, RepositoryException {
+        final String nodeName = "jsonNode";
+
+        final FileInputStream nodeContent = new FileInputStream(JSON_PATH);
+
+        final ImportOptions options = U.createImportOptions(false, false, false, false, false);
+        final CustomContentImportListener listener = new CustomContentImportListener();
+
+        assertFalse(parentNode.hasNode(nodeName));
+        contentImporter.importContent(parentNode, nodeName, ContentTypeUtil.TYPE_JSON, nodeContent, options, listener);
+
+        //Checking that node was created
+        assertTrue("Node wasn't created.", parentNode.hasNode(nodeName));
+    }
 
     @After
     public void shutdown() throws RepositoryException {

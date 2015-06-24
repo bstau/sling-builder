@@ -1,0 +1,6 @@
+{
+  "jsonNode": {
+    "jcr:primaryType": "nt:unstructured",
+    "jcr:mixinTypes": ["mix:versionable", "mix:lockable"]
+  }
+}
