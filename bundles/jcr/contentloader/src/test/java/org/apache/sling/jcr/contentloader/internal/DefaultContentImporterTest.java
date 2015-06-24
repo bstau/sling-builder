@@ -26,6 +26,8 @@ import org.apache.sling.jcr.contentloader.internal.readers.ZipReader;
 import org.apache.sling.testing.mock.sling.ResourceResolverType;
 import org.apache.sling.testing.mock.sling.junit.SlingContext;
 import org.junit.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.*;
 import java.io.*;
@@ -37,13 +39,16 @@ import static org.junit.Assert.*;
 import static org.apache.sling.jcr.contentloader.internal.DefaultContentImporterTest.CustomContentImportListener.*;
 
 public class DefaultContentImporterTest {
+    private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+
     private final String XML_PATH = "src/test/resources/reader/xml-node.xml";
     private final String JSON_PATH = "src/test/resources/reader/json-node.json";
-
-    private DefaultContentImporter contentImporter;
+    private final ImportOptions importOptions = U.createImportOptions(false, false, false, false, false);
 
     @Rule
-    public SlingContext context = new SlingContext(ResourceResolverType.JCR_OAK);
+    public final SlingContext context = new SlingContext(ResourceResolverType.JCR_OAK);
+
+    private DefaultContentImporter contentImporter;
 
     private Session session;
     private Node parentNode;
@@ -65,21 +70,31 @@ public class DefaultContentImporterTest {
         contentImporter = (DefaultContentImporter) context.getService(ContentImporter.class);
     }
 
-    //-----DefaultContentImporter#importContent(Node, String, InputStream, ImportOptions, ContentImportListener)-----//
+    @After
+    public void shutdown() throws RepositoryException {
+        contentImporter = null;
+        if(session != null) {
+            session.save();
+            session.logout();
+            session = null;
+        }
+    }
 
     @Test
     public void createNodeFromJcrXml() throws IOException, RepositoryException {
         final String nodeName = "xmlNode";
+        final CustomContentImportListener listener = new CustomContentImportListener();
 
         final FileInputStream nodeContent = new FileInputStream(XML_PATH);
-
-        final CustomContentImportListener listener = new CustomContentImportListener();
-        final ImportOptions importOptions = U.createImportOptions(false, false, false, false, false);
-
-        assertFalse(parentNode.hasNode(nodeName));
-        assertFalse(listener.callBackData.containsKey(ON_CREATE));
-
-        contentImporter.importContent(parentNode, "xmlNode.jcr.xml", nodeContent, importOptions, listener);
+        try {
+            assertFalse(parentNode.hasNode(nodeName));
+            assertFalse(listener.callBackData.containsKey(ON_CREATE));
+            contentImporter.importContent(parentNode, "xmlNode.jcr.xml", nodeContent, importOptions, listener);
+        } catch(IOException e) {
+            LOGGER.error("IOException", e);
+        } finally {
+            nodeContent.close();
+        }
 
         //Checking that node was created and callback was called
         assertTrue("Node wasn't created.", parentNode.hasNode(nodeName));
@@ -91,10 +106,16 @@ public class DefaultContentImporterTest {
         final String nodeName = "jsonNode";
 
         final FileInputStream nodeContent = new FileInputStream(JSON_PATH);
-        final ImportOptions options = U.createImportOptions(false, false, false, false, false);
+        try {
+            assertFalse(parentNode.hasNode(nodeName));
+            contentImporter.importContent(parentNode, "jsonNode.json",
+                    nodeContent, importOptions, new CustomContentImportListener());
+        } catch(IOException e) {
+            LOGGER.error("IOException", e);
+        } finally {
+            nodeContent.close();
+        }
 
-        assertFalse(parentNode.hasNode(nodeName));
-        contentImporter.importContent(parentNode, "jsonNode.json", nodeContent, options, new CustomContentImportListener());
         //Checking that node was created
         assertTrue("Node wasn't created.", parentNode.hasNode(nodeName));
     }
@@ -102,16 +123,21 @@ public class DefaultContentImporterTest {
     @Test
     public void createNodeWithJcrXmlType() throws IOException, RepositoryException {
         final String nodeName = "xmlNode";
-
-        final FileInputStream nodeContent = new FileInputStream(XML_PATH);
-
-        final ImportOptions options = U.createImportOptions(false, false, false, false, false);
         final CustomContentImportListener listener = new CustomContentImportListener();
 
-        assertFalse(parentNode.hasNode(nodeName));
-        assertFalse(listener.callBackData.containsKey(ON_CREATE));
-        contentImporter.importContent(parentNode, "xmlNode.jcr.xml", ContentTypeUtil.TYPE_JCR_XML, nodeContent, options, listener);
-        //Checking that node was created
+        final FileInputStream nodeContent = new FileInputStream(XML_PATH);
+        try {
+            assertFalse(parentNode.hasNode(nodeName));
+            assertFalse(listener.callBackData.containsKey(ON_CREATE));
+            contentImporter.importContent(parentNode, "xmlNode.jcr.xml",
+                    ContentTypeUtil.TYPE_JCR_XML, nodeContent, importOptions, listener);
+        } catch(IOException e) {
+            LOGGER.error("IOException", e);
+        } finally {
+            nodeContent.close();
+        }
+
+        //Checking that node was created and callback was called
         assertTrue("Node wasn't created.", parentNode.hasNode(nodeName));
         assertTrue(listener.callBackData.containsKey(ON_CREATE));
     }
@@ -121,32 +147,25 @@ public class DefaultContentImporterTest {
         final String nodeName = "jsonNode";
 
         final FileInputStream nodeContent = new FileInputStream(JSON_PATH);
-
-        final ImportOptions options = U.createImportOptions(false, false, false, false, false);
-        final CustomContentImportListener listener = new CustomContentImportListener();
-
-        assertFalse(parentNode.hasNode(nodeName));
-        contentImporter.importContent(parentNode, nodeName, ContentTypeUtil.TYPE_JSON, nodeContent, options, listener);
+        try {
+            assertFalse(parentNode.hasNode(nodeName));
+            contentImporter.importContent(parentNode, nodeName,
+                    ContentTypeUtil.TYPE_JSON, nodeContent, importOptions, new CustomContentImportListener());
+        } catch(IOException e) {
+            LOGGER.error("IOException", e);
+        } finally {
+            nodeContent.close();
+        }
 
         //Checking that node was created
         assertTrue("Node wasn't created.", parentNode.hasNode(nodeName));
-    }
-
-    @After
-    public void shutdown() throws RepositoryException {
-        contentImporter = null;
-        if(session != null) {
-            session.save();
-            session.logout();
-            session = null;
-        }
     }
 
     private final String uniqueId() {
         return getClass().getSimpleName() + UUID.randomUUID();
     }
 
-    public static class CustomContentImportListener implements ContentImportListener {
+    protected static class CustomContentImportListener implements ContentImportListener {
         public static final String ON_MODIFY = "ON_MODIFY";
         public static final String ON_DELETE = "ON_DELETE";
         public static final String ON_MOVE = "ON_MOVE";
