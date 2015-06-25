@@ -24,6 +24,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
+import javax.jcr.Node;
+import javax.jcr.NodeIterator;
+import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 
 import org.apache.sling.commons.testing.junit.Retry;
@@ -31,7 +34,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.tinybundles.core.TinyBundle;
+import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.Constants;
 
 /** Basic test of a bundle that provides initial content */
 @RunWith(PaxExam.class)
@@ -57,5 +62,31 @@ public class BasicInitialContentIT extends ContentBundleTestBase {
         final String testNodePath = contentRootPath + "/basic-content/test-node"; 
         assertTrue("Expecting initial content to be installed", session.itemExists(testNodePath)); 
         assertEquals("Expecting foo=bar", "bar", session.getNode(testNodePath).getProperty("foo").getString()); 
+    }
+
+    @Test
+    @Retry(intervalMsec=RETRY_INTERVAL, timeoutMsec=RETRY_TIMEOUT)
+    public void newContentAdded() throws Exception {
+        final String testNodePath = contentRootPath + "/basic-content";
+
+        TinyBundle b = TinyBundles.bundle()
+                .set(Constants.BUNDLE_SYMBOLICNAME, bundleSymbolicName)
+                .set(SLING_INITIAL_CONTENT_HEADER, DEFAULT_PATH_IN_BUNDLE + "/basic-content-1.json;path:=" + testNodePath);
+        addContent(b, DEFAULT_PATH_IN_BUNDLE, "basic-content-1.json");
+        Bundle bundle = bundleContext.installBundle(bundleSymbolicName, b.build(TinyBundles.withBnd()));
+        bundle.start();
+
+        printNode(session.getRootNode());
+
+        assertTrue("Expecting initial content to be installed", session.itemExists(testNodePath));
+        assertEquals("Expecting foo=bar", "bar", session.getNode(testNodePath).getProperty("foo").getString());
+    }
+
+    private void printNode(Node n) throws RepositoryException {
+        NodeIterator i = n.getNodes();
+        while (i.hasNext()){
+            printNode(i.nextNode());
+        }
+        log.info("POP: " + n.getPath());
     }
 }
