@@ -18,15 +18,13 @@
  */
 package org.apache.sling.jcr.contentloader.it;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
-import javax.jcr.PropertyIterator;
 import javax.jcr.RepositoryException;
 
 import org.apache.sling.commons.testing.junit.Retry;
@@ -41,10 +39,11 @@ import org.osgi.framework.Constants;
 /** Basic test of a bundle that provides initial content */
 @RunWith(PaxExam.class)
 public class BasicInitialContentIT extends ContentBundleTestBase {
-    
+    private final String testNodePath = contentRootPath + "/basic-content/test-node";
+
     protected TinyBundle setupTestBundle(TinyBundle b) throws IOException {
         b.set(SLING_INITIAL_CONTENT_HEADER, DEFAULT_PATH_IN_BUNDLE + ";path:=" + contentRootPath);
-        addContent(b, DEFAULT_PATH_IN_BUNDLE, "basic-content.json");
+        addContent(b, DEFAULT_PATH_IN_BUNDLE, "0/basic-content.json");
         return b;
     }
     
@@ -59,24 +58,21 @@ public class BasicInitialContentIT extends ContentBundleTestBase {
     @Test
     @Retry(intervalMsec=RETRY_INTERVAL, timeoutMsec=RETRY_TIMEOUT)
     public void initialContentInstalled() throws RepositoryException {
-        final String testNodePath = contentRootPath + "/basic-content/test-node"; 
-        assertTrue("Expecting initial content to be installed", session.itemExists(testNodePath)); 
+        assertTrue("Expecting initial content to be installed", session.itemExists(testNodePath));
         assertEquals("Expecting foo=bar", "bar", session.getNode(testNodePath).getProperty("foo").getString()); 
     }
 
     @Test
     @Retry(intervalMsec=RETRY_INTERVAL, timeoutMsec=RETRY_TIMEOUT)
     public void newContentAdded() throws Exception {
-        final String testNodePath = contentRootPath + "/basic-content";
-
-        TinyBundle b = TinyBundles.bundle()
-                .set(Constants.BUNDLE_SYMBOLICNAME, bundleSymbolicName)
-                .set(SLING_INITIAL_CONTENT_HEADER, DEFAULT_PATH_IN_BUNDLE + "/basic-content-1.json;path:=" + testNodePath);
-        addContent(b, DEFAULT_PATH_IN_BUNDLE, "basic-content-1.json");
-        Bundle bundle = bundleContext.installBundle(bundleSymbolicName, b.build(TinyBundles.withBnd()));
-        bundle.start();
-
-        printNode(session.getRootNode());
+        if(bundlesToRemove.size() == 1) {
+            final TinyBundle tiny = createBundleWithContent("1/basic-content.json", ";path:=" + contentRootPath);
+            final String symbolicName = tiny.getHeader(Constants.BUNDLE_SYMBOLICNAME);
+            final InputStream is = tiny.build(TinyBundles.withBnd());
+            assertFalse("Property foo1 should not be created yet", session.getNode(testNodePath).hasProperty("foo1"));
+            Bundle bundle = bundleContext.installBundle(symbolicName, is);
+            bundle.start();
+        }
 
         assertTrue("Expecting initial content to be installed", session.itemExists(testNodePath));
         assertEquals("Expecting foo=bar", "bar", session.getNode(testNodePath).getProperty("foo").getString());
@@ -89,4 +85,5 @@ public class BasicInitialContentIT extends ContentBundleTestBase {
         }
         log.info("POP: " + n.getPath());
     }
+
 }
