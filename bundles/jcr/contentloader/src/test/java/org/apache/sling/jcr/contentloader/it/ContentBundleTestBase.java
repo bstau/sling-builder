@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 @RunWith(PaxExam.class)
 public abstract class ContentBundleTestBase {
     
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+    private final Logger log = LoggerFactory.getLogger(getClass());
     
     @Rule
     public final RetryRule retry = new RetryRule(RETRY_TIMEOUT, RETRY_INTERVAL);
@@ -69,7 +69,7 @@ public abstract class ContentBundleTestBase {
     protected static Session session;
     protected static String bundleSymbolicName;
     protected static String contentRootPath;
-    protected static final List<Bundle> bundlesToRemove = new ArrayList<Bundle>();
+    private static final List<Bundle> bundlesToRemove = new ArrayList<Bundle>();
     
     protected static final int RETRY_TIMEOUT = 5000;
     protected static final int RETRY_INTERVAL = 100;
@@ -131,28 +131,14 @@ public abstract class ContentBundleTestBase {
             .set(Constants.BUNDLE_SYMBOLICNAME, bundleSymbolicName)
             ).build(TinyBundles.withBnd());
     }
-
-
-    protected TinyBundle createBundleWithContent(String subPath, String props) throws IOException {
-        TinyBundle b = TinyBundles.bundle()
-                .set(Constants.BUNDLE_SYMBOLICNAME, UUID.randomUUID().toString())
-                .set(SLING_INITIAL_CONTENT_HEADER, DEFAULT_PATH_IN_BUNDLE + (props == null ? "" : props));
-        addContent(b, DEFAULT_PATH_IN_BUNDLE, subPath);
-        return b;
-    }
     
     abstract protected TinyBundle setupTestBundle(TinyBundle b) throws Exception;
     
     /** Add content to our test bundle */
     protected void addContent(TinyBundle b, String pathInBundle, String resourcePath) throws IOException {
+        pathInBundle += "/" + resourcePath;
         resourcePath = "/initial-content/" + resourcePath;
         final InputStream is = getClass().getResourceAsStream(resourcePath);
-
-        //We store different files in different directories to save them same name.
-        int i = resourcePath.lastIndexOf("/");
-        String fileName = i < 0 ? "/"+resourcePath : resourcePath.substring(i);
-        pathInBundle += fileName;
-
         try {
             assertNotNull("Expecting resource to be found:" + resourcePath, is);
             log.info("Adding resource to bundle, path={}, resource={}", pathInBundle, resourcePath);
