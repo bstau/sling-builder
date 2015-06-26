@@ -16,16 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sling.jcr.contentloader.internal.it;
+package org.apache.sling.jcr.contentloader.it;
 
-import org.apache.sling.jcr.contentloader.it.P;
-import org.junit.*;
+import org.apache.sling.commons.testing.junit.RetryRule;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
-import org.ops4j.pax.exam.spi.reactors.PerClass;
-import org.ops4j.pax.exam.spi.reactors.PerMethod;
 import org.ops4j.pax.tinybundles.core.TinyBundle;
 import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.Bundle;
@@ -37,13 +34,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import javax.jcr.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -56,7 +51,10 @@ public abstract class AbstractContentLoaderIT {
     protected static final String DEFAULT_PATH_IN_BUNDLE = "initial-content";
     protected static final String SLING_INITIAL_CONTENT_HEADER = "Sling-Initial-Content";
 
-    private static final Map<String, Bundle> installedBundles = new HashMap<String, Bundle>();
+    private static final Set<String> installedBundles = new HashSet<String>();
+
+    @Rule
+    public final RetryRule retry = new RetryRule(RETRY_TIMEOUT, RETRY_INTERVAL);
 
     @Inject
     protected BundleContext bundleContext;
@@ -66,10 +64,10 @@ public abstract class AbstractContentLoaderIT {
 
     protected Bundle installBundle(String symbolicName, InputStream bundleAsStream) throws BundleException {
         Bundle b = null;
-        if(symbolicName != null && !installedBundles.containsKey(symbolicName)) {
+        if(symbolicName != null && !installedBundles.contains(symbolicName)) {
             b = bundleContext.installBundle(symbolicName, bundleAsStream);
-            installedBundles.put(symbolicName, b);
             b.start();
+            installedBundles.add(symbolicName);
         }
         return b;
     }
@@ -82,12 +80,13 @@ public abstract class AbstractContentLoaderIT {
                 bundleToReturn.uninstall();
             }
         }
+        installedBundles.remove(symbolicName);
         return bundleToReturn;
     }
 
     protected InputStream createBundleStream(String symbolicName, String contentPath, String props) throws IOException {
         InputStream is = null;
-        if(symbolicName != null && !installedBundles.containsKey(symbolicName)) {
+        if (symbolicName != null && !installedBundles.contains(symbolicName)) {
             TinyBundle b = TinyBundles.bundle()
                     .set(Constants.BUNDLE_SYMBOLICNAME, symbolicName);
             if(contentPath != null) {
@@ -115,22 +114,6 @@ public abstract class AbstractContentLoaderIT {
             if(is != null) {
                 is.close();
             }
-        }
-    }
-
-    protected void printNode(Node n) throws RepositoryException {
-        NodeIterator i = n.getNodes();
-        while (i.hasNext()){
-            printNode(i.nextNode());
-        }
-        LOGGER.info("POP: {}", n.getPath());
-    }
-
-    protected void printProps(Node n) throws RepositoryException {
-        PropertyIterator i = n.getProperties();
-        while (i.hasNext()) {
-            Property p = i.nextProperty();
-            LOGGER.info("POOP: {} -> {}", p.getName(), (p.isMultiple() ? "[...]" : p.getString()));
         }
     }
 

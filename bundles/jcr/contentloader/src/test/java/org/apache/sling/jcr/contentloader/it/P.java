@@ -33,6 +33,8 @@ import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.*;
+
 /** Utilities for Pax Exam testing */
 public class P {
     private static final Logger log = LoggerFactory.getLogger(P.class);
@@ -66,5 +68,22 @@ public class P {
             }
         }
         return null;
+    }
+
+
+    public static void printNode(Node n) throws RepositoryException {
+        NodeIterator i = n.getNodes();
+        while (i.hasNext()){
+            printNode(i.nextNode());
+        }
+        log.info("NODE: {}", n.getPath());
+    }
+
+    public static void printProps(Node n) throws RepositoryException {
+        PropertyIterator i = n.getProperties();
+        while (i.hasNext()) {
+            Property p = i.nextProperty();
+            log.info("PROP: {} -> {}", p.getName(), (p.isMultiple() ? "[...]" : p.getString()));
+        }
     }
 }

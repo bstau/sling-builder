@@ -1,4 +1,4 @@
-package org.apache.sling.jcr.contentloader.internal.it;/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,6 +16,7 @@ package org.apache.sling.jcr.contentloader.internal.it;/*
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.sling.jcr.contentloader.it;
 
 import org.apache.sling.commons.testing.junit.Retry;
 import org.junit.Before;
@@ -24,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
+import org.ops4j.pax.exam.spi.reactors.PerMethod;
 import org.osgi.framework.BundleException;
 
 import javax.jcr.Node;
@@ -57,7 +59,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * Test creates first bundle with initial content and then the second one, with pretty same initial content.
      * The only difference between content nodes are properties. After both nodes are installed, all properties should
      * exists.
-     * Then, when we uninstall these bundles, test checks that initial content was not disappear, because 'uninstall' and
+     * Then, when we uninstall these bundles, test checks that initial content was NOT REMOVED, because 'uninstall' and
      * 'overwrite' properties are not set.
      */
     public void createContentForTwoBundles() throws IOException, RepositoryException, BundleException {
@@ -70,7 +72,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
                 assertFalse("Node should not exist before bundle is installed", session.itemExists(testNodeName));
                 installBundle(FIRST_SYMBOLIC, is);
             } catch (BundleException e) {
-                e.printStackTrace();
+                LOGGER.error("BundleException: {}", e);
             } finally {
                 is.close();
             }
@@ -80,24 +82,30 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         is = createBundleStream(SECOND_SYMBOLIC, "1/basic-content.json", props);
         if(is != null) { //is==null if bundle was installed on previous method run
             try {
-                assertTrue("Property 'foo' should be equal to 'bar'", session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
-                assertFalse("Node should not exist before node is installed", session.getNode(testNodeName).hasProperty("foo1"));
+                assertTrue("Property 'foo' should be equal to 'bar'",
+                        session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
+                assertFalse("Property 'foo1' should not exist before node is installed",
+                        session.getNode(testNodeName).hasProperty("foo1"));
                 installBundle(SECOND_SYMBOLIC, is);
             } catch (BundleException e) {
-                e.printStackTrace();
+                LOGGER.error("BundleException: {}", e);
             } finally {
                 is.close();
             }
         }
-        assertTrue("Property should not be overwritten", session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
-        assertTrue("Property 'foo1' should be equal to 'bar1'", session.getNode(testNodeName).getProperty("foo1").getString().equals("bar1"));
+        assertTrue("Property 'foo' should not be overwritten",
+                session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
+        assertTrue("Property 'foo1' should be equal to 'bar1'",
+                session.getNode(testNodeName).getProperty("foo1").getString().equals("bar1"));
 
         uninstallBundle(FIRST_SYMBOLIC);
         uninstallBundle(SECOND_SYMBOLIC);
 
         //Since uninstall and overwrite parameters are not set, content should not be deleted
-        assertTrue("Property foo should not be deleted", session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
-        assertTrue("Property foo1 should not be deleted", session.getNode(testNodeName).getProperty("foo1").getString().equals("bar1"));
+        assertTrue("Property foo should not be deleted",
+                session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
+        assertTrue("Property foo1 should not be deleted",
+                session.getNode(testNodeName).getProperty("foo1").getString().equals("bar1"));
     }
 
 
@@ -111,7 +119,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * Test creates first bundle with initial content and then the second one, with same destination path for initial content.
      * After first bundle is installed we check that initial content was added.
      * After second bundle is installed with overwrite=true property the initial content of first node should overwritten
-     * Then after both bundles are uninstalled we checking that their content was also erased from repository.
+     * Then after both bundles are uninstalled we checking that their content was REMOVED from repository.
      */
     public void overwriteExistingBundleContent() throws IOException, RepositoryException, BundleException {
         final String testNodeName = "/" + THIRD_SYMBOLIC + "/basic-content/test-node";
@@ -123,7 +131,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
                 assertFalse("Node should not exists before bundle is installed", session.itemExists(testNodeName));
                 installBundle(THIRD_SYMBOLIC, is);
             } catch (BundleException e) {
-                e.printStackTrace();
+                LOGGER.error("BundleException: {}", e);
             } finally {
                 is.close();
             }
@@ -133,8 +141,10 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         is = createBundleStream(FOURTH_SYMBOLIC, "1/basic-content.json", props);
         if(is != null) { //is==null if bundle was installed on previous method run
             try {
-                assertTrue("Property should be equal to bar", session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
-                assertFalse("Node should not be created before node is installed", session.getNode(testNodeName).hasProperty("foo1"));
+                assertTrue("Property 'foo' should be equal to bar",
+                        session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
+                assertFalse("Property 'foo1' should not be created before node is installed",
+                        session.getNode(testNodeName).hasProperty("foo1"));
                 installBundle(FOURTH_SYMBOLIC, is);
             } catch (BundleException e) {
                 e.printStackTrace();
@@ -142,9 +152,10 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
                 is.close();
             }
         }
-        printProps(session.getNode(testNodeName));
-        assertFalse("Property should be deleted because of overwrite flag", session.getNode(testNodeName).hasProperty("foo"));
-        assertTrue("Property should be equal to bar1", session.getNode(testNodeName).getProperty("foo1").getString().equals("bar1"));
+        assertFalse("Property 'foo' should be deleted because of overwrite flag",
+                session.getNode(testNodeName).hasProperty("foo"));
+        assertTrue("Property 'foo1' should be equal to bar1",
+                session.getNode(testNodeName).getProperty("foo1").getString().equals("bar1"));
 
         uninstallBundle(THIRD_SYMBOLIC);
         uninstallBundle(FOURTH_SYMBOLIC);
@@ -163,7 +174,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * Test creates first bundle with initial content and then the second one, with same destination path for initial content.
      * After first bundle is installed we check that initial content was added.
      * After second bundle is installed with overwrite=true property the initial content of first node should overwritten
-     * Then after both bundles are uninstalled we checking that their content was not erased from repository.
+     * Then after both bundles are uninstalled we checking that their content was NOT REMOVED from repository.
      */
     public void testOverwritePropertyFlag() throws IOException, RepositoryException, BundleException {
         final String testNodeName = "/" + FIFTH_SYMBOLIC + "/basic-content/test-node";
@@ -182,8 +193,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         }
         assertTrue("Node should be created after bundle is installed", session.itemExists(testNodeName));
 
-        String propsForXml = props + "/basic-content"; //For XML node with file's name will be not crated
-        is = createBundleStream(SIXTH_SYMBOLIC, "0/basic-content.xml", propsForXml);
+        is = createBundleStream(SIXTH_SYMBOLIC, "0/basic-content.xml", props);
         if(is != null) { //is==null if bundle was installed on previous method run
             try {
                 assertTrue("Property should be equal to bar", session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
@@ -211,9 +221,9 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
     @Retry(intervalMsec=RETRY_INTERVAL, timeoutMsec=RETRY_TIMEOUT)
     /**
      * Test creates bundle with initial content and then checks it in.
-     * After bundle is uninstalled node should not be erased.
+     * After bundle is uninstalled node should NOT be REMOVED.
      */
-    public void loadDataBinary() throws IOException, RepositoryException, BundleException {
+    public void loadAndCheckinContent() throws IOException, RepositoryException, BundleException {
         final String testNodeName = "/" + SEVENTH_SYMBOLIC + "/basic-content/test-node";
         final String props = ";checkin:=true;path:=/" + SEVENTH_SYMBOLIC;
 
@@ -231,12 +241,12 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         final Node initContent = session.getNode(testNodeName);
         assertTrue("Property from file should not be added, since import provider ignored",
                 initContent.getProperty("foo2").getString().equals("bar2"));
-        assertFalse("If node was checked in, value of jcr:checkedOut chould be equals to FALSE",
-                initContent.getProperty("jcr:checkedOut").getBoolean());
+        assertFalse("If node was checked in, value of jcr:isCheckedOut chould be equals to FALSE",
+                initContent.getProperty("jcr:isCheckedOut").getBoolean());
 
         uninstallBundle(SEVENTH_SYMBOLIC);
 
-        assertTrue("Node should be deleted", session.itemExists(testNodeName));
+        assertTrue("Node should not be deleted", session.itemExists(testNodeName));
     }
 
 
@@ -246,8 +256,8 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
     @Test
     @Retry(intervalMsec=RETRY_INTERVAL, timeoutMsec=RETRY_TIMEOUT)
     /**
-     * Test creates bundle with initial content with unextracted json data
-     * After bundle is uninstalled node should not be erased.
+     * Test creates bundle's initial content with unextracted json data
+     * After bundle is uninstalled node should NOT be REMOVED.
      */
     public void checkinNodeWithoutImportProvider() throws IOException, RepositoryException, BundleException {
         final String testNodeName = "/" + EIGHTH_SYMBOLIC + "/basic-content";
