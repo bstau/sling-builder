@@ -24,7 +24,7 @@
   <parent>
     <groupId>org.apache.sling</groupId>
     <artifactId>sling</artifactId>
-    <version>24-SNAPSHOT</version>
+    <version>23</version>
     <relativePath/>
   </parent>
 
@@ -39,10 +39,12 @@
     <exam.version>3.5.0</exam.version>
     <url.version>1.5.2</url.version>
     <bundle.file.name>${basedir}/target/${project.build.finalName}.jar</bundle.file.name>
-    <sling.java.version>6</sling.java.version>
     <sling.launchpad.version>7</sling.launchpad.version>
     <pax.vm.options>-Xmx256M -XX:MaxPermSize=256m</pax.vm.options>
     <dump.test.bundles>false</dump.test.bundles>
+
+    <!-- argLine needs to be here so that jacoco plugin adds its own stuff to it -->
+    <argLine>${pax.vm.options}</argLine>
   </properties>
 
   <scm>
@@ -84,7 +86,10 @@
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
           <excludes>
+            <exclude>**/*.json</exclude>
             <exclude>src/test/resources/reader/testfile.txt</exclude>
+            <exclude>jackrabbit/**</exclude>
+            <exclude>derby.log</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -100,7 +105,6 @@
           </execution>
         </executions>
         <configuration>
-          <argLine>${pax.vm.options}</argLine>
           <systemPropertyVariables>
             <java.protocol.handler.pkgs>org.ops4j.pax.url</java.protocol.handler.pkgs>
             <bundle.file.name>${bundle.file.name}</bundle.file.name>
