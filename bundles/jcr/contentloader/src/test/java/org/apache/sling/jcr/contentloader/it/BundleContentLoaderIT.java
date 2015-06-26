@@ -25,7 +25,6 @@ import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
-import org.ops4j.pax.exam.spi.reactors.PerMethod;
 import org.osgi.framework.BundleException;
 
 import javax.jcr.Node;
@@ -63,10 +62,10 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * 'overwrite' properties are not set.
      */
     public void createContentForTwoBundles() throws IOException, RepositoryException, BundleException {
-        final String testNodeName = "/" + FIRST_SYMBOLIC + "/basic-content/test-node";
+        final String testNodeName = "/" + FIRST_SYMBOLIC + "/content/test-node";
         final String props = ";path:=/" + FIRST_SYMBOLIC;
 
-        InputStream is = createBundleStream(FIRST_SYMBOLIC, "0/basic-content.json", props);
+        InputStream is = createBundleStream(FIRST_SYMBOLIC, "0/content.json", props);
         if(is != null) { //is==null if bundle was installed on previous method run
             try {
                 assertFalse("Node should not exist before bundle is installed", session.itemExists(testNodeName));
@@ -79,7 +78,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         }
         assertTrue("Node should be created after bundle is installed", session.itemExists(testNodeName));
 
-        is = createBundleStream(SECOND_SYMBOLIC, "1/basic-content.json", props);
+        is = createBundleStream(SECOND_SYMBOLIC, "1/content.json", props);
         if(is != null) { //is==null if bundle was installed on previous method run
             try {
                 assertTrue("Property 'foo' should be equal to 'bar'",
@@ -122,10 +121,10 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * Then after both bundles are uninstalled we checking that their content was REMOVED from repository.
      */
     public void overwriteExistingBundleContent() throws IOException, RepositoryException, BundleException {
-        final String testNodeName = "/" + THIRD_SYMBOLIC + "/basic-content/test-node";
+        final String testNodeName = "/" + THIRD_SYMBOLIC + "/content/test-node";
         final String props = ";overwrite:=true;path:=/" + THIRD_SYMBOLIC; //'uninstall' flag by default equal to 'overwrite' flag value
 
-        InputStream is = createBundleStream(THIRD_SYMBOLIC, "0/basic-content.json", props);
+        InputStream is = createBundleStream(THIRD_SYMBOLIC, "0/content.json", props);
         if(is != null) { //is==null if bundle was installed on previous method run
             try {
                 assertFalse("Node should not exists before bundle is installed", session.itemExists(testNodeName));
@@ -138,7 +137,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         }
         assertTrue("Node should be created after bundle is installed", session.itemExists(testNodeName));
 
-        is = createBundleStream(FOURTH_SYMBOLIC, "1/basic-content.json", props);
+        is = createBundleStream(FOURTH_SYMBOLIC, "1/content.json", props);
         if(is != null) { //is==null if bundle was installed on previous method run
             try {
                 assertTrue("Property 'foo' should be equal to bar",
@@ -177,10 +176,10 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * Then after both bundles are uninstalled we checking that their content was NOT REMOVED from repository.
      */
     public void testOverwritePropertyFlag() throws IOException, RepositoryException, BundleException {
-        final String testNodeName = "/" + FIFTH_SYMBOLIC + "/basic-content/test-node";
+        final String testNodeName = "/" + FIFTH_SYMBOLIC + "/content/test-node";
         final String props = ";overwriteProperties:=true;path:=/" + FIFTH_SYMBOLIC;
 
-        InputStream is = createBundleStream(FIFTH_SYMBOLIC, "0/basic-content.json", props);
+        InputStream is = createBundleStream(FIFTH_SYMBOLIC, "0/content.json", props);
         if(is != null) { //is==null if bundle was installed on previous method run
             try {
                 assertFalse("Node should not exists before bundle is installed", session.itemExists(testNodeName));
@@ -193,7 +192,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         }
         assertTrue("Node should be created after bundle is installed", session.itemExists(testNodeName));
 
-        is = createBundleStream(SIXTH_SYMBOLIC, "0/basic-content.xml", props);
+        is = createBundleStream(SIXTH_SYMBOLIC, "0/content.xml", props);
         if(is != null) { //is==null if bundle was installed on previous method run
             try {
                 assertTrue("Property should be equal to bar", session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
@@ -224,10 +223,10 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * After bundle is uninstalled node should NOT be REMOVED.
      */
     public void loadAndCheckinContent() throws IOException, RepositoryException, BundleException {
-        final String testNodeName = "/" + SEVENTH_SYMBOLIC + "/basic-content/test-node";
+        final String testNodeName = "/" + SEVENTH_SYMBOLIC + "/content/test-node";
         final String props = ";checkin:=true;path:=/" + SEVENTH_SYMBOLIC;
 
-        InputStream is = createBundleStream(SEVENTH_SYMBOLIC, "2/basic-content.json", props);
+        InputStream is = createBundleStream(SEVENTH_SYMBOLIC, "2/content.json", props);
         if(is != null) { //is==null if bundle was installed on previous method run
             try {
                 assertFalse("Node should not exists before bundle is installed", session.itemExists(testNodeName));
@@ -260,10 +259,10 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * After bundle is uninstalled node should NOT be REMOVED.
      */
     public void checkinNodeWithoutImportProvider() throws IOException, RepositoryException, BundleException {
-        final String testNodeName = "/" + EIGHTH_SYMBOLIC + "/basic-content";
+        final String testNodeName = "/" + EIGHTH_SYMBOLIC + "/content";
         final String props = ";ignoreImportProviders:=\"json\";path:=/" + EIGHTH_SYMBOLIC;
 
-        InputStream is = createBundleStream(EIGHTH_SYMBOLIC, "0/basic-content.json", props);
+        InputStream is = createBundleStream(EIGHTH_SYMBOLIC, "0/content.json", props);
         if(is != null) { //is==null if bundle was installed on previous method run
             try {
                 assertFalse("Node should not exist", session.itemExists(testNodeName));

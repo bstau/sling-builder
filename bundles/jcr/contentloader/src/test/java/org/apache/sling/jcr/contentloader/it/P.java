@@ -70,7 +70,6 @@ public class P {
         return null;
     }
 
-
     public static void printNode(Node n) throws RepositoryException {
         NodeIterator i = n.getNodes();
         while (i.hasNext()){

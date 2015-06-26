@@ -18,13 +18,19 @@
  * under the License.
 -->
 <node xmlns:nt="http://www.jcp.org/jcr/nt/1.0">
-    <name>test-node</name>
+    <name>content</name>
 
-    <properties>
-        <property>
-            <name>foo</name>
-            <value>bar-new</value>
-            <type>String</type>
-        </property>
-    </properties>
+    <nodes>
+        <node>
+            <name>test-node</name>
+
+            <properties>
+                <property>
+                    <name>foo</name>
+                    <value>bar-new</value>
+                    <type>String</type>
+                </property>
+            </properties>
+        </node>
+    </nodes>
 </node>
