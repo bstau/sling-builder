@@ -1,11 +1,8 @@
 package org.apache.sling.engine.impl;
 
 import junitx.util.PrivateAccessor;
-import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.auth.core.AuthenticationSupport;
 import org.apache.sling.engine.impl.helper.RequestListenerManager;
-import org.apache.sling.testing.mock.jcr.MockJcr;
-import org.apache.sling.testing.mock.osgi.MockOsgi;
 import org.apache.sling.testing.mock.sling.ResourceResolverType;
 import org.apache.sling.testing.mock.sling.junit.SlingContext;
 import org.apache.sling.testing.mock.sling.servlet.MockServletContext;
@@ -16,8 +13,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
