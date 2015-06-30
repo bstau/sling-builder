@@ -51,6 +51,7 @@ public class P {
                     provision(bundle(thisProjectsBundle.toURI().toString())),
                     wrappedBundle(mavenBundle("org.apache.sling", "org.apache.sling.commons.testing").versionAsInProject()),
                     wrappedBundle(mavenBundle("org.ops4j.pax.tinybundles", "tinybundles").versionAsInProject()),
+                    wrappedBundle(mavenBundle("org.apache.sling", "org.apache.sling.testing.tools").versionAsInProject()),
                     mavenBundle("biz.aQute.bnd", "bndlib").versionAsInProject(),
                     
                     // TODO the Sling Settings service is not available without this (missing launchpad startup event?) 
