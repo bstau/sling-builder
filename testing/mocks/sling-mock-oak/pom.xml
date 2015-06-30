@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.sling</groupId>
         <artifactId>sling</artifactId>
-        <version>22</version>
+        <version>23</version>
         <relativePath/>
     </parent>
 
@@ -35,7 +35,6 @@
     <description>Implements a resource resolver type for Jackrabbit Oak that can be used in unit tests based on Sling Mocks.</description>
   
     <properties>
-        <sling.java.version>6</sling.java.version>
         <oak.version>1.2.2</oak.version>
         <jackrabbit.version>2.10.1</jackrabbit.version>
     </properties>
@@ -51,14 +50,14 @@
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.testing.sling-mock</artifactId>
-            <version>1.4.1-SNAPSHOT</version>
+            <version>1.4.0</version>
             <scope>compile</scope>
         </dependency>
     
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.testing.sling-mock</artifactId>
-            <version>1.4.1-SNAPSHOT</version>
+            <version>1.4.0</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
@@ -184,6 +183,16 @@
                     </goals>
                 </execution>
               </executions>
+          </plugin>
+
+          <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>dependency-reduced-pom.xml</exclude>
+                    </excludes>
+                </configuration>
           </plugin>
         </plugins>
     </build>

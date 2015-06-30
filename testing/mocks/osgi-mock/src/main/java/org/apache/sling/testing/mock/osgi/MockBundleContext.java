@@ -47,19 +47,27 @@ import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+
+import static java.util.Collections.synchronizedList;
+import static java.util.Collections.synchronizedMap;
+import static java.util.Collections.synchronizedSortedSet;
 
 /**
  * Mock {@link BundleContext} implementation.
  */
 class MockBundleContext implements BundleContext {
 
+    private static final Logger LOG = LoggerFactory.getLogger(MockBundleContext.class);
+
     private final MockBundle bundle;
-    private final SortedSet<MockServiceRegistration> registeredServices = new TreeSet<MockServiceRegistration>();
-    private final Map<ServiceListener, Filter> serviceListeners = new HashMap<ServiceListener, Filter>();
-    private final List<BundleListener> bundleListeners = new ArrayList<BundleListener>();
-    
+    private final SortedSet<MockServiceRegistration> registeredServices = synchronizedSortedSet(new TreeSet<MockServiceRegistration>());
+    private final Map<ServiceListener, Filter> serviceListeners = synchronizedMap(new HashMap<ServiceListener, Filter>());
+    private final List<BundleListener> bundleListeners = synchronizedList(new ArrayList<BundleListener>());
+
     public MockBundleContext() {
         this.bundle = new MockBundle(this);
     }
