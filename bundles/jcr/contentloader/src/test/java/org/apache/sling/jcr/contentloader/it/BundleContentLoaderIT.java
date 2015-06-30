@@ -39,7 +39,7 @@ import static org.junit.Assert.*;
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 public class BundleContentLoaderIT extends AbstractContentLoaderIT {
-
+    private static final Integer THREAD_SLEEP = 300;
     private Session session;
 
     @Before
@@ -61,7 +61,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * Then, when we uninstall these bundles, test checks that initial content was NOT REMOVED, because 'uninstall' and
      * 'overwrite' properties are not set.
      */
-    public void createContentForTwoBundles() throws IOException, RepositoryException, BundleException {
+    public void createContentForTwoBundles() throws IOException, RepositoryException, BundleException, InterruptedException {
         final String testNodeName = "/" + FIRST_SYMBOLIC + "/content/test-node";
         final String props = ";path:=/" + FIRST_SYMBOLIC;
 
@@ -100,6 +100,8 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         uninstallBundle(FIRST_SYMBOLIC);
         uninstallBundle(SECOND_SYMBOLIC);
 
+        Thread.sleep(THREAD_SLEEP);
+
         //Since uninstall and overwrite parameters are not set, content should not be deleted
         assertTrue("Property foo should not be deleted",
                 session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
@@ -120,7 +122,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * After second bundle is installed with overwrite=true property the initial content of first node should overwritten
      * Then after both bundles are uninstalled we checking that their content was REMOVED from repository.
      */
-    public void overwriteExistingBundleContent() throws IOException, RepositoryException, BundleException {
+    public void overwriteExistingBundleContent() throws IOException, RepositoryException, BundleException, InterruptedException {
         final String testNodeName = "/" + THIRD_SYMBOLIC + "/content/test-node";
         final String props = ";overwrite:=true;path:=/" + THIRD_SYMBOLIC; //'uninstall' flag by default equal to 'overwrite' flag value
 
@@ -159,6 +161,8 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         uninstallBundle(THIRD_SYMBOLIC);
         uninstallBundle(FOURTH_SYMBOLIC);
 
+        Thread.sleep(THREAD_SLEEP);
+
         assertFalse("Node should be deleted", session.itemExists(testNodeName));
     }
 
@@ -175,7 +179,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * After second bundle is installed with overwrite=true property the initial content of first node should overwritten
      * Then after both bundles are uninstalled we checking that their content was NOT REMOVED from repository.
      */
-    public void testOverwritePropertyFlag() throws IOException, RepositoryException, BundleException {
+    public void testOverwritePropertyFlag() throws IOException, RepositoryException, BundleException, InterruptedException {
         final String testNodeName = "/" + FIFTH_SYMBOLIC + "/content/test-node";
         final String props = ";overwriteProperties:=true;path:=/" + FIFTH_SYMBOLIC;
 
@@ -209,6 +213,8 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         uninstallBundle(FIFTH_SYMBOLIC);
         uninstallBundle(SIXTH_SYMBOLIC);
 
+        Thread.sleep(THREAD_SLEEP);
+
         assertTrue("Node should be deleted", session.itemExists(testNodeName));
     }
 
@@ -222,7 +228,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * Test creates bundle with initial content and then checks it in.
      * After bundle is uninstalled node should NOT be REMOVED.
      */
-    public void loadAndCheckinContent() throws IOException, RepositoryException, BundleException {
+    public void loadAndCheckinContent() throws IOException, RepositoryException, BundleException, InterruptedException {
         final String testNodeName = "/" + SEVENTH_SYMBOLIC + "/content/test-node";
         final String props = ";checkin:=true;path:=/" + SEVENTH_SYMBOLIC;
 
@@ -245,6 +251,8 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
 
         uninstallBundle(SEVENTH_SYMBOLIC);
 
+        Thread.sleep(THREAD_SLEEP);
+
         assertTrue("Node should not be deleted", session.itemExists(testNodeName));
     }
 
@@ -258,7 +266,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
      * Test creates bundle's initial content with unextracted json data
      * After bundle is uninstalled node should NOT be REMOVED.
      */
-    public void checkinNodeWithoutImportProvider() throws IOException, RepositoryException, BundleException {
+    public void checkinNodeWithoutImportProvider() throws IOException, RepositoryException, BundleException, InterruptedException {
         final String testNodeName = "/" + EIGHTH_SYMBOLIC + "/content";
         final String props = ";ignoreImportProviders:=\"json\";path:=/" + EIGHTH_SYMBOLIC;
 
@@ -278,6 +286,8 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         assertTrue("Node should exist as raw data", session.itemExists(testNodeName + ".json/jcr:content"));
 
         uninstallBundle(EIGHTH_SYMBOLIC);
+
+        Thread.sleep(THREAD_SLEEP);
 
         assertTrue("Node should not be deleted after bundle was uninstalled", session.itemExists(testNodeName + ".json/jcr:content"));
     }
