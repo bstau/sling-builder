@@ -1,0 +1,6 @@
+{
+    "test-node" : {
+        "foo2": "bar2",
+        "jcr:mixinTypes": ["mix:versionable", "mix:lockable"]
+    }
+}
