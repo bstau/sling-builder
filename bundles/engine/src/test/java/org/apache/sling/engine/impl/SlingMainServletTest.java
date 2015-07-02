@@ -23,6 +23,7 @@ import org.apache.sling.api.request.SlingRequestEvent;
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.auth.core.AuthenticationSupport;
+import org.apache.sling.engine.SlingRequestProcessor;
 import org.apache.sling.engine.impl.helper.RequestListenerManager;
 import org.apache.sling.engine.impl.request.RequestData;
 import org.apache.sling.testing.mock.sling.ResourceResolverType;
@@ -30,12 +31,16 @@ import org.apache.sling.testing.mock.sling.junit.SlingContext;
 import org.apache.sling.testing.mock.sling.servlet.MockSlingHttpServletRequest;
 import org.apache.sling.testing.mock.sling.servlet.MockSlingHttpServletResponse;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.osgi.framework.BundleContext;
+import org.osgi.service.http.HttpContext;
 import org.osgi.service.http.HttpService;
 import org.osgi.service.http.NamespaceException;
 
+import javax.servlet.Servlet;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import java.io.IOException;
@@ -49,7 +54,7 @@ import static org.mockito.Mockito.*;
 public class SlingMainServletTest {
     private SlingMainServlet underTest;
     private ResourceResolver resourceResolver;
-
+    private BundleContext bundleContext;
 
     @Rule
     public final SlingContext context = new SlingContext(ResourceResolverType.JCR_JACKRABBIT);
@@ -59,11 +64,12 @@ public class SlingMainServletTest {
         underTest = new SlingMainServlet();
         //We need to clone ResourceResolver because every SlingMainServlet#service(...) call closes it.
         resourceResolver = context.resourceResolver().clone(null);
+        bundleContext = context.bundleContext();
     }
 
 
 
-    //-----SlingMainServlet#service(ServletRequest req, ServletResponse res)----//
+    //-----SlingMainServlet#service(...)----//
 
     private RequestListenerManager requestListenerManager;
     private SlingRequestProcessorImpl requestProcessor;
@@ -126,21 +132,41 @@ public class SlingMainServletTest {
         verify(requestListenerManager, times(1)).sendEvent(req, SlingRequestEvent.EventType.EVENT_DESTROY);
     }
 
+
+
+    //-----SlingMainServlet#activate(...)-----//
+
     @Test
     public void testServletActivation() throws NoSuchFieldException, ServletException, NamespaceException {
-        final SlingHttpContext slingHttpContext = (SlingHttpContext) PrivateAccessor.getField(underTest, "slingHttpContext");
+        final int INCLUSION_COUNTER = 40;
+        final int CALL_COUNTER = 800;
 
         Map<String, Object> componentConfig = new HashMap<String, Object>();
-        componentConfig.put("sling.additional.response.headers", new String[]{"foo=bar"});
         componentConfig.put(SlingMainServlet.PROP_ALLOW_TRACE, "true");
-        componentConfig.put(SlingMainServlet.PROP_MAX_INCLUSION_COUNTER, 40);
-        componentConfig.put(SlingMainServlet.PROP_MAX_CALL_COUNTER, 800);
+        componentConfig.put(SlingMainServlet.PROP_MAX_CALL_COUNTER, CALL_COUNTER);
+        componentConfig.put("sling.additional.response.headers", new String[]{"foo=bar"});
+        componentConfig.put(SlingMainServlet.PROP_MAX_INCLUSION_COUNTER, INCLUSION_COUNTER);
 
         HttpService httpService = mock(HttpService.class);
         PrivateAccessor.setField(underTest, "httpService", httpService);
 
-        underTest.activate(context.bundleContext(), componentConfig);
-        verify(httpService, times(1)).registerServlet("/", underTest, any(Dictionary.class), slingHttpContext);
+        ServletContext servletContext = mock(ServletContext.class);
+        doReturn(2).when(servletContext).getMajorVersion();
+
+        ServletConfig config = mock(ServletConfig.class);
+        doReturn(servletContext).when(config).getServletContext();
+        PrivateAccessor.setField(underTest, "config", config);
+
+        assertNull("ServiceReference should not exist until SlingMainServlet is activated",
+                bundleContext.getServiceReference(SlingRequestProcessor.NAME));
+        underTest.activate(bundleContext, componentConfig);
+        assertNotNull("ServiceReference should exist, since service is already registered",
+                bundleContext.getServiceReference(SlingRequestProcessor.NAME));
+
+        //Now testing component deactivation
+        underTest.deactivate();
+        assertNull("ServiceReference should not exist after service was deactivated",
+                bundleContext.getServiceReference(SlingRequestProcessor.NAME));
     }
 
     //Mocks which are required to call SlingMainServlet#service(...) method
@@ -152,6 +178,7 @@ public class SlingMainServletTest {
         PrivateAccessor.setField(mainServlet, "requestProcessor", requestProcessor);
     }
 
+    //This data is required to create a thread name
     private MockSlingHttpServletRequest createPreconfiguredRequest(){
         final MockSlingHttpServletRequest req = spy(context.request());
         doReturn("127.0.0.1").when(req).getRemoteAddr();
@@ -160,4 +187,5 @@ public class SlingMainServletTest {
 
         return req;
     }
+
 }
