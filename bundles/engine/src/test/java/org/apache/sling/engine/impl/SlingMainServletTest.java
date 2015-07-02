@@ -146,6 +146,7 @@ public class SlingMainServletTest {
         componentConfig.put(SlingMainServlet.PROP_MAX_CALL_COUNTER, CALL_COUNTER);
         componentConfig.put("sling.additional.response.headers", new String[]{"foo=bar"});
         componentConfig.put(SlingMainServlet.PROP_MAX_INCLUSION_COUNTER, INCLUSION_COUNTER);
+        componentConfig.put("sling.default.parameter.encoding", "utf-8");
 
         HttpService httpService = mock(HttpService.class);
         PrivateAccessor.setField(underTest, "httpService", httpService);

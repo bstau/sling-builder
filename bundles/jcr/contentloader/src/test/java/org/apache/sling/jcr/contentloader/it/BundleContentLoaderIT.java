@@ -19,8 +19,6 @@
 package org.apache.sling.jcr.contentloader.it;
 
 import org.apache.sling.commons.testing.junit.Retry;
-import org.apache.sling.testing.tools.retry.RetryLoop;
-import org.apache.sling.testing.tools.sling.TimeoutsProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -93,34 +91,33 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
                 is.close();
             }
         }
-        assertTrue("Property 'foo' should not be overwritten",
-                session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
-        assertTrue("Property 'foo1' should be equal to 'bar1'",
-                session.getNode(testNodeName).getProperty("foo1").getString().equals("bar1"));
 
         uninstallBundle(FIRST_SYMBOLIC);
-        uninstallBundle(SECOND_SYMBOLIC);
-
-        final RetryLoop.Condition c = new RetryLoop.Condition() {
-
+        final RetryLoop.Condition firstBundleCondition = new RetryLoop.Condition() {
             public String getDescription() {
                 return "Checking that properties were not deleted";
             }
 
             public boolean isTrue() throws Exception {
                 //Since uninstall and overwrite parameters are not set, content should not be deleted
-                assertTrue("Property foo should not be deleted",
-                        session.getNode(testNodeName).getProperty("foo").getString().equals("bar"));
-                assertTrue("Property foo1 should not be deleted",
-                        session.getNode(testNodeName).getProperty("foo1").getString().equals("bar1"));
-                return true;
+                return session.getNode(testNodeName).getProperty("foo").getString().equals("bar");
             }
         };
+        new RetryLoop(firstBundleCondition, RETRY_TIMEOUT, RETRY_INTERVAL);
 
-        LOGGER.info("{} (timeout={} seconds)", c.getDescription(), RETRY_TIMEOUT);
-        new RetryLoop(c, RETRY_TIMEOUT, RETRY_INTERVAL);
+        uninstallBundle(SECOND_SYMBOLIC);
+        final RetryLoop.Condition secondBundleCondition = new RetryLoop.Condition() {
+            public String getDescription() {
+                return "Checking that properties were not deleted";
+            }
+
+            public boolean isTrue() throws Exception {
+                //Since uninstall and overwrite parameters are not set, content should not be deleted
+                return session.getNode(testNodeName).getProperty("foo1").getString().equals("bar1");
+            }
+        };
+        new RetryLoop(secondBundleCondition, RETRY_TIMEOUT, RETRY_INTERVAL);
     }
-
 
 
     private static final String THIRD_SYMBOLIC = UUID.randomUUID().toString();

@@ -54,12 +54,18 @@ public class BundleContentLoader extends BaseImportLoader {
 
     public static final String PARENT_DESCRIPTOR = "ROOT";
 
+    private static volatile boolean isContentUninstallationFinished;
+
     private final Logger log = LoggerFactory.getLogger(BundleContentLoader.class);
 
     private BundleHelper bundleHelper;
 
     // bundles whose registration failed and should be retried
     private List<Bundle> delayedBundles;
+
+    public static boolean isBundleUninstalled(){
+        return isContentUninstallationFinished;
+    }
 
     public BundleContentLoader(BundleHelper bundleHelper, ContentReaderWhiteboard contentReaderWhiteboard) {
         super(contentReaderWhiteboard);
@@ -173,6 +179,7 @@ public class BundleContentLoader extends BaseImportLoader {
      * @param bundle The bundle.
      */
     public void unregisterBundle(final Session session, final Bundle bundle) {
+        isContentUninstallationFinished = false;
 
         if (delayedBundles.contains(bundle)) {
             delayedBundles.remove(bundle);
@@ -198,6 +205,8 @@ public class BundleContentLoader extends BaseImportLoader {
                 log.error("Cannot remove initial content for bundle " + bundle.getSymbolicName() + " : " + re.getMessage(), re);
             }
         }
+
+        isContentUninstallationFinished = true;
     }
 
     // ---------- internal -----------------------------------------------------
