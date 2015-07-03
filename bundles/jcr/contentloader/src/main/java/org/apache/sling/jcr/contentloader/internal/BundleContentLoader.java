@@ -54,7 +54,7 @@ public class BundleContentLoader extends BaseImportLoader {
 
     public static final String PARENT_DESCRIPTOR = "ROOT";
 
-    private static volatile boolean isContentUninstallationFinished;
+    private static volatile boolean isIdleState;
 
     private final Logger log = LoggerFactory.getLogger(BundleContentLoader.class);
 
@@ -63,8 +63,8 @@ public class BundleContentLoader extends BaseImportLoader {
     // bundles whose registration failed and should be retried
     private List<Bundle> delayedBundles;
 
-    public static boolean isBundleUninstalled(){
-        return isContentUninstallationFinished;
+    public static boolean isIdle(){
+        return isIdleState;
     }
 
     public BundleContentLoader(BundleHelper bundleHelper, ContentReaderWhiteboard contentReaderWhiteboard) {
@@ -89,6 +89,7 @@ public class BundleContentLoader extends BaseImportLoader {
      * @throws RepositoryException
      */
     public void registerBundle(final Session metadataSession, final Bundle bundle, final boolean isUpdate) throws RepositoryException {
+        isIdleState = false;
 
         // if this is an update, we have to uninstall the old content first
         if (isUpdate) {
@@ -113,6 +114,8 @@ public class BundleContentLoader extends BaseImportLoader {
             // add to delayed bundles - if this is not an update!
             delayedBundles.add(bundle);
         }
+
+        isIdleState = true;
     }
 
     private boolean registerBundleInternal(final Session metadataSession, final Bundle bundle, final boolean isRetry, final boolean isUpdate) {
@@ -179,7 +182,7 @@ public class BundleContentLoader extends BaseImportLoader {
      * @param bundle The bundle.
      */
     public void unregisterBundle(final Session session, final Bundle bundle) {
-        isContentUninstallationFinished = false;
+        isIdleState = false;
 
         if (delayedBundles.contains(bundle)) {
             delayedBundles.remove(bundle);
@@ -206,7 +209,7 @@ public class BundleContentLoader extends BaseImportLoader {
             }
         }
 
-        isContentUninstallationFinished = true;
+        isIdleState = true;
     }
 
     // ---------- internal -----------------------------------------------------

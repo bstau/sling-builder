@@ -47,7 +47,7 @@ public class RetryLoop {
         timeout = System.currentTimeMillis() + timeoutSeconds * 1000L;
         while(System.currentTimeMillis() < timeout) {
             try {
-                if(BundleContentLoader.isBundleUninstalled() && c.isTrue()) {
+                if(c.isTrue()) {
                     return;
                 }
             } catch(AssertionError ae) {

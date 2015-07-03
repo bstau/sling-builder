@@ -25,7 +25,6 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.auth.core.AuthenticationSupport;
 import org.apache.sling.engine.SlingRequestProcessor;
 import org.apache.sling.engine.impl.helper.RequestListenerManager;
-import org.apache.sling.engine.impl.request.RequestData;
 import org.apache.sling.testing.mock.sling.ResourceResolverType;
 import org.apache.sling.testing.mock.sling.junit.SlingContext;
 import org.apache.sling.testing.mock.sling.servlet.MockSlingHttpServletRequest;
@@ -34,17 +33,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.osgi.framework.BundleContext;
-import org.osgi.service.http.HttpContext;
 import org.osgi.service.http.HttpService;
 import org.osgi.service.http.NamespaceException;
 
-import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import java.io.IOException;
-import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,13 +52,16 @@ public class SlingMainServletTest {
     private ResourceResolver resourceResolver;
     private BundleContext bundleContext;
 
+    private RequestListenerManager requestListenerManager;
+    private SlingRequestProcessorImpl requestProcessor;
+
     @Rule
     public final SlingContext context = new SlingContext(ResourceResolverType.JCR_JACKRABBIT);
 
     @Before
     public void setup() throws LoginException {
         underTest = new SlingMainServlet();
-        //We need to clone ResourceResolver because every SlingMainServlet#service(...) call closes it.
+        //We need to clone ResourceResolver because every SlingMainServlet#service(...) method call closes it.
         resourceResolver = context.resourceResolver().clone(null);
         bundleContext = context.bundleContext();
     }
@@ -70,9 +69,6 @@ public class SlingMainServletTest {
 
 
     //-----SlingMainServlet#service(...)----//
-
-    private RequestListenerManager requestListenerManager;
-    private SlingRequestProcessorImpl requestProcessor;
 
     @Test
     public void testServiceWithGetRequest() throws ServletException, NoSuchFieldException, IOException {
@@ -135,6 +131,7 @@ public class SlingMainServletTest {
 
 
     //-----SlingMainServlet#activate(...)-----//
+    //-----SlingMainServlet#deactivate(...)-----//
 
     @Test
     public void testServletActivation() throws NoSuchFieldException, ServletException, NamespaceException {

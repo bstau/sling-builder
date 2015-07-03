@@ -44,6 +44,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
     @Before
     public void setup() throws RepositoryException {
         session = repository.loginAdministrative(null);
+        ConditionFactory.setSession(session);
     }
 
 
@@ -93,30 +94,12 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         }
 
         uninstallBundle(FIRST_SYMBOLIC);
-        final RetryLoop.Condition firstBundleCondition = new RetryLoop.Condition() {
-            public String getDescription() {
-                return "Checking that properties were not deleted";
-            }
-
-            public boolean isTrue() throws Exception {
-                //Since uninstall and overwrite parameters are not set, content should not be deleted
-                return session.getNode(testNodeName).getProperty("foo").getString().equals("bar");
-            }
-        };
-        new RetryLoop(firstBundleCondition, RETRY_TIMEOUT, RETRY_INTERVAL);
+        new RetryLoop(ConditionFactory.expectPropertyValue(testNodeName, "foo", "bar"),
+                RETRY_TIMEOUT, RETRY_INTERVAL);
 
         uninstallBundle(SECOND_SYMBOLIC);
-        final RetryLoop.Condition secondBundleCondition = new RetryLoop.Condition() {
-            public String getDescription() {
-                return "Checking that properties were not deleted";
-            }
-
-            public boolean isTrue() throws Exception {
-                //Since uninstall and overwrite parameters are not set, content should not be deleted
-                return session.getNode(testNodeName).getProperty("foo1").getString().equals("bar1");
-            }
-        };
-        new RetryLoop(secondBundleCondition, RETRY_TIMEOUT, RETRY_INTERVAL);
+        new RetryLoop(ConditionFactory.expectPropertyValue(testNodeName, "foo1", "bar1"),
+                RETRY_TIMEOUT, RETRY_INTERVAL);
     }
 
 
@@ -170,20 +153,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         uninstallBundle(THIRD_SYMBOLIC);
         uninstallBundle(FOURTH_SYMBOLIC);
 
-        final RetryLoop.Condition c = new RetryLoop.Condition() {
-
-            public String getDescription() {
-                return "Checking that node was deleted";
-            }
-
-            public boolean isTrue() throws Exception {
-                assertFalse("Node should be deleted", session.itemExists(testNodeName));
-                return true;
-            }
-        };
-
-        LOGGER.info("{} (timeout={} seconds)", c.getDescription(), RETRY_TIMEOUT);
-        new RetryLoop(c, RETRY_TIMEOUT, RETRY_INTERVAL);
+        new RetryLoop(ConditionFactory.noItemByPath(testNodeName), RETRY_TIMEOUT, RETRY_INTERVAL);
     }
 
 
@@ -233,20 +203,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
         uninstallBundle(FIFTH_SYMBOLIC);
         uninstallBundle(SIXTH_SYMBOLIC);
 
-        final RetryLoop.Condition c = new RetryLoop.Condition() {
-
-            public String getDescription() {
-                return "Checking that node was not deleted";
-            }
-
-            public boolean isTrue() throws Exception {
-                assertTrue("Node should not be deleted", session.itemExists(testNodeName));
-                return true;
-            }
-        };
-
-        LOGGER.info("{} (timeout={} seconds)", c.getDescription(), RETRY_TIMEOUT);
-        new RetryLoop(c, RETRY_TIMEOUT, RETRY_INTERVAL);
+        new RetryLoop(ConditionFactory.expectItemByPath(testNodeName), RETRY_TIMEOUT, RETRY_INTERVAL);
     }
 
 
@@ -282,20 +239,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
 
         uninstallBundle(SEVENTH_SYMBOLIC);
 
-        final RetryLoop.Condition c = new RetryLoop.Condition() {
-
-            public String getDescription() {
-                return "Checking that node was notdeleted";
-            }
-
-            public boolean isTrue() throws Exception {
-                assertTrue("Node should not be deleted", session.itemExists(testNodeName));
-                return true;
-            }
-        };
-
-        LOGGER.info("{} (timeout={} seconds)", c.getDescription(), RETRY_TIMEOUT);
-        new RetryLoop(c, RETRY_TIMEOUT, RETRY_INTERVAL);
+        new RetryLoop(ConditionFactory.expectItemByPath(testNodeName), RETRY_TIMEOUT, RETRY_INTERVAL);
     }
 
 
@@ -329,20 +273,7 @@ public class BundleContentLoaderIT extends AbstractContentLoaderIT {
 
         uninstallBundle(EIGHTH_SYMBOLIC);
 
-        final RetryLoop.Condition c = new RetryLoop.Condition() {
-
-            public String getDescription() {
-                return "Checking that node was notdeleted";
-            }
-
-            public boolean isTrue() throws Exception {
-                assertTrue("Node should not be deleted after bundle was uninstalled",
-                        session.itemExists(testNodeName + ".json/jcr:content"));
-                return true;
-            }
-        };
-
-        LOGGER.info("{} (timeout={} seconds)", c.getDescription(), RETRY_TIMEOUT);
-        new RetryLoop(c, RETRY_TIMEOUT, RETRY_INTERVAL);
+        new RetryLoop(ConditionFactory.expectItemByPath(testNodeName + ".json/jcr:content"),
+                RETRY_TIMEOUT, RETRY_INTERVAL);
     }
 }
