@@ -23,98 +23,62 @@ import java.security.Principal;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.engine.impl.request.RequestData;
-import org.jmock.Expectations;
-import org.jmock.Mockery;
-import org.jmock.integration.junit4.JUnit4Mockery;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.apache.sling.testing.mock.sling.junit.SlingContext;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 public class SlingHttpServletRequestImplTest {
 
-    SlingHttpServletRequestImpl slingHttpServletRequestImpl;
-    
-    private Mockery context = new JUnit4Mockery() {{
-        setImposteriser(ClassImposteriser.INSTANCE);
-    }};
-    
+    private SlingHttpServletRequestImpl underTest;
+    private HttpServletRequest request;
+    private RequestData requestData;
+    private ResourceResolver resourceResolver;
+
+
+    @Rule
+    public final SlingContext slingContext = new SlingContext();
+
+    @Before
+    public void setup(){
+        //Required mocks to create SlingHttpServletRequestImpl object
+        resourceResolver = spy(slingContext.resourceResolver());
+        requestData = mock(RequestData.class);
+        doReturn(resourceResolver).when(requestData).getResourceResolver();
+
+        request = spy(slingContext.request());
+        doReturn("/path").when(request).getServletPath();
+        doReturn("/path").when(request).getPathInfo();
+
+        underTest = new SlingHttpServletRequestImpl(requestData, request);
+    }
+
     @Test
     public void getUserPrincipal_test() {
-        final HttpServletRequest servletRequest = context.mock(HttpServletRequest.class);
-        
-        context.checking(new Expectations() {{
-            one(servletRequest).getServletPath();
-            will(returnValue("/path"));
-            allowing(servletRequest).getPathInfo();
-            will(returnValue("/path"));
-            allowing(servletRequest).getRemoteUser();
-            will(returnValue("remoteUser"));
-        }});
-        
-        final RequestData requestData = context.mock(RequestData.class, "requestData");        
-        final ResourceResolver resourceResolver = context.mock(ResourceResolver.class);
-        
-        context.checking(new Expectations() {{
-            allowing(requestData).getResourceResolver();
-            will(returnValue(resourceResolver));
-            allowing(resourceResolver).adaptTo(Principal.class);
-            will(returnValue(null));
-        }});
-        
-        slingHttpServletRequestImpl = new SlingHttpServletRequestImpl(requestData, servletRequest);
-        Assert.assertEquals("UserPrincipal: remoteUser", slingHttpServletRequestImpl.getUserPrincipal().toString());
+        doReturn("remoteUser").when(request).getRemoteUser();
+        doReturn(null).when(resourceResolver).adaptTo(Principal.class);
+
+        Assert.assertEquals("UserPrincipal: remoteUser", underTest.getUserPrincipal().toString());
     }
 
     @Test
     public void getUserPrincipal_test2() {
-        final HttpServletRequest servletRequest = context.mock(HttpServletRequest.class);
-        
-        context.checking(new Expectations() {{
-            one(servletRequest).getServletPath();
-            will(returnValue("/path"));
-            allowing(servletRequest).getPathInfo();
-            will(returnValue("/path"));
-            allowing(servletRequest).getRemoteUser();
-            will(returnValue(null));
-        }});
-        
-        final RequestData requestData = context.mock(RequestData.class, "requestData");        
-        final ResourceResolver resourceResolver = context.mock(ResourceResolver.class);
-        
-        context.checking(new Expectations() {{
-            allowing(requestData).getResourceResolver();
-            will(returnValue(resourceResolver));
-            allowing(resourceResolver).adaptTo(Principal.class);
-            will(returnValue(null));
-        }});
-        
-        slingHttpServletRequestImpl = new SlingHttpServletRequestImpl(requestData, servletRequest);
-        Assert.assertNull(slingHttpServletRequestImpl.getUserPrincipal());
+        doReturn(null).when(request).getRemoteUser();
+        doReturn(null).when(resourceResolver).adaptTo(Principal.class);
+
+        Assert.assertNull(underTest.getUserPrincipal());
     }
     
     @Test
     public void getUserPrincipal_test3() {
-        final HttpServletRequest servletRequest = context.mock(HttpServletRequest.class);
-        
-        context.checking(new Expectations() {{
-            one(servletRequest).getServletPath();
-            will(returnValue("/path"));
-            allowing(servletRequest).getPathInfo();
-            will(returnValue("/path"));
-        }});
-        
-        final RequestData requestData = context.mock(RequestData.class, "requestData");        
-        final ResourceResolver resourceResolver = context.mock(ResourceResolver.class);
-        final Principal principal = context.mock(Principal.class);
-        
-        context.checking(new Expectations() {{
-            allowing(requestData).getResourceResolver();
-            will(returnValue(resourceResolver));
-            allowing(resourceResolver).adaptTo(Principal.class);
-            will(returnValue(principal));
-        }});
-        
-        slingHttpServletRequestImpl = new SlingHttpServletRequestImpl(requestData, servletRequest);
-        Assert.assertEquals(principal, slingHttpServletRequestImpl.getUserPrincipal());
+        final Principal principal = mock(Principal.class);
+        doReturn(principal).when(resourceResolver).adaptTo(Principal.class);
+
+        Assert.assertEquals(principal, underTest.getUserPrincipal());
     }
 }
