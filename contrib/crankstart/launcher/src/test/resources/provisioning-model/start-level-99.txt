@@ -21,4 +21,4 @@
 [feature name=startlevel99]
 
 [artifacts startLevel=99]
-  commons-collections/commons-collections/3.2.1
+  commons-collections/commons-collections/3.2.2

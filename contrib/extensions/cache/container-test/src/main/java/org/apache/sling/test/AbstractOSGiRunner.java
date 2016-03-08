@@ -113,7 +113,7 @@ public  abstract class AbstractOSGiRunner {
 						// bound to need servlet api
 						mavenBundle("org.apache.felix", "javax.servlet","1.0.0"),
 						// standard items.
-						mavenBundle("commons-collections", "commons-collections", "3.2.1"), // 3.2.1 is a bundle, 3.2 is not
+						mavenBundle("commons-collections", "commons-collections", "3.2.2"), // 3.2.1 is a bundle, 3.2 is not
 						mavenBundle("commons-io", "commons-io", "1.4"),
 						// export ourselves
 						wrappedBundle(mavenBundle("org.apache.sling","org.apache.sling.commons.cache.container-test")).exports(AbstractOSGiRunner.class.getPackage().getName()),

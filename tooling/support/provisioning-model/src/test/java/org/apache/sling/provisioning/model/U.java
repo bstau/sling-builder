@@ -96,7 +96,7 @@ public class U {
 
         {
             final ArtifactGroup g = getGroup(m, "example", DEFAULT_RUN_MODE, DEFAULT_START_LEVEL);
-            U.assertArtifact(g, "mvn:commons-collections/commons-collections/3.2.1/jar");
+            U.assertArtifact(g, "mvn:commons-collections/commons-collections/3.2.2/jar");
             U.assertArtifact(g, "mvn:org.example/jar-is-default/1.2/jar");
         }
 

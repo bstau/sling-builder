@@ -110,7 +110,7 @@ public abstract class AbstractJobHandlingTest {
 
                 mavenBundle("commons-io", "commons-io", "1.4"),
                 mavenBundle("commons-fileupload", "commons-fileupload", "1.3.1"),
-                mavenBundle("commons-collections", "commons-collections", "3.2.1"),
+                mavenBundle("commons-collections", "commons-collections", "3.2.2"),
                 mavenBundle("commons-codec", "commons-codec", "1.9"),
                 mavenBundle("commons-lang", "commons-lang", "2.6"),
                 mavenBundle("commons-pool", "commons-pool", "1.6"),

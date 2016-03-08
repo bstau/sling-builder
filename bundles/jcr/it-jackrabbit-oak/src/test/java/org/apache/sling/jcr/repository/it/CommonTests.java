@@ -174,7 +174,7 @@ public abstract class CommonTests {
 
         opt.add(mavenBundle("commons-io", "commons-io", "2.4"));
         opt.add(mavenBundle("commons-fileupload", "commons-fileupload", "1.3.1"));
-        opt.add(mavenBundle("commons-collections", "commons-collections", "3.2.1"));
+        opt.add(mavenBundle("commons-collections", "commons-collections", "3.2.2"));
         opt.add(mavenBundle("commons-codec", "commons-codec", "1.9"));
         opt.add(mavenBundle("commons-lang", "commons-lang", "2.6"));
         opt.add(mavenBundle("commons-pool", "commons-pool", "1.6"));
